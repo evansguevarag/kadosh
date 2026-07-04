@@ -1,0 +1,23 @@
+from fastapi import APIRouter, HTTPException, status
+
+from app.db.session import check_database_connection
+
+router = APIRouter(prefix="/system", tags=["System"])
+
+
+@router.get("/ping")
+def ping_database() -> dict[str, str]:
+    try:
+        check_database_connection()
+
+        return {
+            "status": "ok",
+            "service": "kadosh-pos-api",
+            "database": "connected",
+            "message": "Supabase PostgreSQL connection is working correctly.",
+        }
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database connection is not available.",
+        ) from exc
