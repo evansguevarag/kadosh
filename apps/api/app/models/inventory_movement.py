@@ -1,7 +1,7 @@
+from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, Integer, String
-from sqlalchemy.dialects.postgresql import UUID as PostgresUUID
+from sqlalchemy import DateTime, ForeignKey, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.session import Base
@@ -9,71 +9,36 @@ from app.models.base import UUIDPrimaryKeyMixin
 
 
 class InventoryMovement(UUIDPrimaryKeyMixin, Base):
-    """Modelo ORM para movimientos de inventario.
-
-    Registra entradas, salidas, ajustes, devoluciones y salidas por venta.
-    Esto permite auditar por qué cambió el stock de cada variante.
-    """
+    """Modelo de movimientos de inventario."""
 
     __tablename__ = "inventory_movements"
 
     product_variant_id: Mapped[UUID] = mapped_column(
-        PostgresUUID(as_uuid=True),
-        ForeignKey("product_variants.id", onupdate="CASCADE", ondelete="RESTRICT"),
+        ForeignKey("product_variants.id"),
         nullable=False,
         index=True,
     )
-
     user_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID(as_uuid=True),
-        ForeignKey("users.id", onupdate="CASCADE", ondelete="SET NULL"),
+        ForeignKey("users.id"),
         nullable=True,
         index=True,
     )
-
     sale_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID(as_uuid=True),
-        ForeignKey("sales.id", onupdate="CASCADE", ondelete="SET NULL"),
+        ForeignKey("sales.id"),
         nullable=True,
         index=True,
     )
-
-    movement_type: Mapped[str] = mapped_column(
-        String(40),
+    movement_type: Mapped[str] = mapped_column(String(30), nullable=False, index=True)
+    quantity: Mapped[int] = mapped_column(Integer, nullable=False)
+    previous_stock: Mapped[int] = mapped_column(Integer, nullable=False)
+    new_stock: Mapped[int] = mapped_column(Integer, nullable=False)
+    reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
         nullable=False,
     )
 
-    quantity: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-    )
-
-    previous_stock: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-    )
-
-    new_stock: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-    )
-
-    reason: Mapped[str | None] = mapped_column(
-        String(255),
-        nullable=True,
-    )
-
-    product_variant = relationship(
-        "ProductVariant",
-        back_populates="inventory_movements",
-    )
-
-    user = relationship(
-        "User",
-        back_populates="inventory_movements",
-    )
-
-    sale = relationship(
-        "Sale",
-        back_populates="inventory_movements",
-    )
+    product_variant = relationship("ProductVariant", back_populates="inventory_movements")
+    user = relationship("User", back_populates="inventory_movements")
+    sale = relationship("Sale", back_populates="inventory_movements")
