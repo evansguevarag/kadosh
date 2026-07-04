@@ -7,6 +7,7 @@ from app.api.v1.endpoints import (
     document_lookup,
     health,
     inventory,
+    payments,
     product_variants,
     products,
     roles,
@@ -25,4 +26,5 @@ api_router.include_router(inventory.router)
 api_router.include_router(document_lookup.router)
 api_router.include_router(customers.router)
 api_router.include_router(sales.router)
+api_router.include_router(payments.router)
 api_router.include_router(roles.router)
