@@ -24,6 +24,15 @@ class Settings(BaseSettings):
     apiperu_base_url: str = "https://apiperu.dev/api"
     apiperu_token: str = Field(default="", alias="APIPERU_TOKEN")
 
+    customer_display_device_id: str = Field(
+        default="tablet-caja-01",
+        alias="CUSTOMER_DISPLAY_DEVICE_ID",
+    )
+    customer_display_device_secret: str = Field(
+        default="",
+        alias="CUSTOMER_DISPLAY_DEVICE_SECRET",
+    )
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from app.api.v1.endpoints import (
     auth,
     categories,
+    culqi,
     customer_display,
     customers,
     document_lookup,
@@ -31,4 +32,5 @@ api_router.include_router(sales.router)
 api_router.include_router(payments.router)
 api_router.include_router(payment_sessions.router)
 api_router.include_router(customer_display.router)
+api_router.include_router(culqi.router)
 api_router.include_router(roles.router)
