@@ -15,6 +15,7 @@ from app.repositories.product_variant_repository import ProductVariantRepository
 from app.repositories.sale_item_repository import SaleItemRepository
 from app.repositories.sale_repository import SaleRepository
 from app.schemas.sale import SaleCreate
+from app.services.audit_log_service import AuditLogService
 
 
 class SaleService:
@@ -27,6 +28,7 @@ class SaleService:
         self.variant_repository = ProductVariantRepository(db)
         self.customer_repository = CustomerRepository(db)
         self.inventory_movement_repository = InventoryMovementRepository(db)
+        self.audit_log_service = AuditLogService(db)
 
     def list_sales(self) -> list[Sale]:
         """Lista todas las ventas."""
@@ -165,6 +167,25 @@ class SaleService:
             for movement in inventory_movements:
                 self.inventory_movement_repository.create(movement)
 
+            self.audit_log_service.register_action(
+                action="CREAR_VENTA",
+                entity_name="SALE",
+                entity_id=created_sale.id,
+                current_user=current_user,
+                new_values={
+                    "sale_number": created_sale.sale_number,
+                    "customer_id": str(created_sale.customer_id)
+                    if created_sale.customer_id
+                    else None,
+                    "subtotal": str(created_sale.subtotal),
+                    "discount_total": str(created_sale.discount_total),
+                    "tax_total": str(created_sale.tax_total),
+                    "total": str(created_sale.total),
+                    "status": created_sale.status,
+                    "items_count": len(sale_items),
+                },
+            )
+
             self.db.commit()
 
             refreshed_sale = self.sale_repository.find_by_id(created_sale.id)
@@ -180,7 +201,7 @@ class SaleService:
             self.db.rollback()
             raise
 
-    def mark_sale_as_paid(self, sale_id: UUID) -> Sale:
+    def mark_sale_as_paid(self, sale_id: UUID, current_user: User | None = None) -> Sale:
         """Marca una venta como pagada."""
 
         sale = self.get_sale_by_id(sale_id)
@@ -197,11 +218,28 @@ class SaleService:
                 detail="No se puede pagar una venta cancelada.",
             )
 
+        previous_status = sale.status
+
         sale.status = "PAID"
         sale.paid_at = datetime.now(timezone.utc)
 
         try:
             self.sale_repository.update(sale)
+
+            self.audit_log_service.register_action(
+                action="MARCAR_VENTA_PAGADA",
+                entity_name="SALE",
+                entity_id=sale.id,
+                current_user=current_user,
+                old_values={
+                    "status": previous_status,
+                },
+                new_values={
+                    "status": sale.status,
+                    "paid_at": sale.paid_at.isoformat() if sale.paid_at else None,
+                },
+            )
+
             self.db.commit()
 
             refreshed_sale = self.sale_repository.find_by_id(sale.id)

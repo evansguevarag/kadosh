@@ -6,9 +6,11 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.models.payment import Payment
+from app.models.user import User
 from app.repositories.payment_repository import PaymentRepository
 from app.repositories.sale_repository import SaleRepository
 from app.schemas.payment import PaymentCreate
+from app.services.audit_log_service import AuditLogService
 
 
 ALLOWED_PAYMENT_METHODS = {
@@ -37,6 +39,7 @@ class PaymentService:
         self.db = db
         self.payment_repository = PaymentRepository(db)
         self.sale_repository = SaleRepository(db)
+        self.audit_log_service = AuditLogService(db)
 
     def list_payments(self) -> list[Payment]:
         """Lista todos los pagos registrados."""
@@ -69,7 +72,11 @@ class PaymentService:
 
         return payment
 
-    def register_manual_payment(self, payload: PaymentCreate) -> Payment:
+    def register_manual_payment(
+        self,
+        payload: PaymentCreate,
+        current_user: User | None = None,
+    ) -> Payment:
         """Registra un pago manual y actualiza el estado de la venta si corresponde."""
 
         payment_method = payload.payment_method.strip().upper()
@@ -143,10 +150,31 @@ class PaymentService:
         try:
             created_payment = self.payment_repository.create(payment)
 
+            sale_previous_status = sale.status
+
             if next_paid_amount == sale.total:
                 sale.status = "PAID"
                 sale.paid_at = datetime.now(timezone.utc)
                 self.sale_repository.update(sale)
+
+            self.audit_log_service.register_action(
+                action="REGISTRAR_PAGO_MANUAL",
+                entity_name="PAYMENT",
+                entity_id=created_payment.id,
+                current_user=current_user,
+                new_values={
+                    "sale_id": str(sale.id),
+                    "sale_number": sale.sale_number,
+                    "payment_method": created_payment.payment_method,
+                    "provider": created_payment.provider,
+                    "amount": str(created_payment.amount),
+                    "currency": created_payment.currency,
+                    "status": created_payment.status,
+                    "operation_code": created_payment.operation_code,
+                    "sale_previous_status": sale_previous_status,
+                    "sale_current_status": sale.status,
+                },
+            )
 
             self.db.commit()
             self.db.refresh(created_payment)

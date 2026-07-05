@@ -12,6 +12,7 @@ from app.repositories.payment_repository import PaymentRepository
 from app.repositories.payment_session_repository import PaymentSessionRepository
 from app.repositories.sale_repository import SaleRepository
 from app.schemas.culqi import CulqiChargeCreate, CulqiChargeResponse
+from app.services.audit_log_service import AuditLogService
 
 
 CULQI_CHARGES_URL = "https://api.culqi.com/v2/charges"
@@ -25,6 +26,7 @@ class CulqiService:
         self.payment_repository = PaymentRepository(db)
         self.payment_session_repository = PaymentSessionRepository(db)
         self.sale_repository = SaleRepository(db)
+        self.audit_log_service = AuditLogService(db)
 
     def create_charge(self, payload: CulqiChargeCreate) -> CulqiChargeResponse:
         """Crea un cargo único en Culqi usando el token generado en el frontend."""
@@ -57,6 +59,17 @@ class CulqiService:
             payment_session.status = "EXPIRED"
             payment_session.completed_at = now
             self.payment_session_repository.update(payment_session)
+
+            self.audit_log_service.register_action(
+                action="EXPIRAR_SESION_PAGO_CULQI",
+                entity_name="PAYMENT_SESSION",
+                entity_id=payment_session.id,
+                new_values={
+                    "status": payment_session.status,
+                    "completed_at": payment_session.completed_at.isoformat(),
+                },
+            )
+
             self.db.commit()
 
             raise HTTPException(
@@ -106,11 +119,32 @@ class CulqiService:
             "Authorization": f"Bearer {settings.culqi_secret_key}",
         }
 
+        previous_session_status = payment_session.status
         payment_session.status = "PROCESSING"
         payment_session.processing_at = now
 
         try:
             self.payment_session_repository.update(payment_session)
+
+            self.audit_log_service.register_action(
+                action="PROCESAR_PAGO_CULQI",
+                entity_name="PAYMENT_SESSION",
+                entity_id=payment_session.id,
+                old_values={
+                    "status": previous_session_status,
+                },
+                new_values={
+                    "status": payment_session.status,
+                    "processing_at": payment_session.processing_at.isoformat()
+                    if payment_session.processing_at
+                    else None,
+                    "amount": str(payment_session.amount),
+                    "currency": payment_session.currency,
+                    "sale_id": str(sale.id),
+                    "sale_number": sale.sale_number,
+                },
+            )
+
             self.db.flush()
 
             with httpx.Client(timeout=20) as client:
@@ -157,6 +191,7 @@ class CulqiService:
 
             created_payment = self.payment_repository.create(payment)
 
+            previous_sale_status = sale.status
             sale.status = "PAID"
             sale.paid_at = datetime.now(timezone.utc)
             self.sale_repository.update(sale)
@@ -165,6 +200,26 @@ class CulqiService:
             payment_session.status = "PAID"
             payment_session.completed_at = datetime.now(timezone.utc)
             self.payment_session_repository.update(payment_session)
+
+            self.audit_log_service.register_action(
+                action="PAGO_CULQI_APROBADO",
+                entity_name="PAYMENT",
+                entity_id=created_payment.id,
+                new_values={
+                    "sale_id": str(sale.id),
+                    "sale_number": sale.sale_number,
+                    "payment_session_id": str(payment_session.id),
+                    "payment_method": created_payment.payment_method,
+                    "provider": created_payment.provider,
+                    "amount": str(created_payment.amount),
+                    "currency": created_payment.currency,
+                    "status": created_payment.status,
+                    "culqi_charge_id": created_payment.culqi_charge_id,
+                    "sale_previous_status": previous_sale_status,
+                    "sale_current_status": sale.status,
+                    "payment_session_status": payment_session.status,
+                },
+            )
 
             self.db.commit()
             self.db.refresh(created_payment)
@@ -242,10 +297,31 @@ class CulqiService:
 
         created_payment = self.payment_repository.create(payment)
 
+        previous_session_status = payment_session.status
         payment_session.payment_id = created_payment.id
         payment_session.status = "FAILED"
         payment_session.completed_at = datetime.now(timezone.utc)
         self.payment_session_repository.update(payment_session)
+
+        self.audit_log_service.register_action(
+            action="PAGO_CULQI_RECHAZADO",
+            entity_name="PAYMENT",
+            entity_id=created_payment.id,
+            old_values={
+                "payment_session_status": previous_session_status,
+            },
+            new_values={
+                "sale_id": str(sale_id),
+                "payment_session_id": str(payment_session.id),
+                "payment_method": created_payment.payment_method,
+                "provider": created_payment.provider,
+                "amount": str(created_payment.amount),
+                "currency": created_payment.currency,
+                "status": created_payment.status,
+                "payment_session_status": payment_session.status,
+                "message": message,
+            },
+        )
 
         self.db.commit()
         self.db.refresh(created_payment)
@@ -262,4 +338,9 @@ class CulqiService:
     def _to_cents(self, amount: Decimal) -> int:
         """Convierte monto decimal en soles a céntimos para Culqi."""
 
-        return int((amount * Decimal("100")).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+        return int(
+            (amount * Decimal("100")).quantize(
+                Decimal("1"),
+                rounding=ROUND_HALF_UP,
+            )
+        )

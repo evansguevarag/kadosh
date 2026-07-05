@@ -92,4 +92,8 @@ def update_payment_session_status(
 ) -> PaymentSessionResponse:
     service = PaymentSessionService(db)
 
-    return service.update_payment_session_status(payment_session_id, payload)
+    return service.update_payment_session_status(
+        payment_session_id,
+        payload,
+        current_user,
+    )

@@ -12,6 +12,7 @@ from app.schemas.payment_session import (
     PaymentSessionCreate,
     PaymentSessionStatusUpdate,
 )
+from app.services.audit_log_service import AuditLogService
 
 
 ALLOWED_PAYMENT_SESSION_STATUSES = {
@@ -39,6 +40,7 @@ class PaymentSessionService:
         self.db = db
         self.payment_session_repository = PaymentSessionRepository(db)
         self.sale_repository = SaleRepository(db)
+        self.audit_log_service = AuditLogService(db)
 
     def list_payment_sessions(self) -> list[PaymentSession]:
         """Lista todas las sesiones de pago."""
@@ -139,6 +141,22 @@ class PaymentSessionService:
 
         try:
             created_session = self.payment_session_repository.create(payment_session)
+
+            self.audit_log_service.register_action(
+                action="CREAR_SESION_PAGO",
+                entity_name="PAYMENT_SESSION",
+                entity_id=created_session.id,
+                current_user=current_user,
+                new_values={
+                    "sale_id": str(created_session.sale_id),
+                    "device_id": created_session.device_id,
+                    "status": created_session.status,
+                    "amount": str(created_session.amount),
+                    "currency": created_session.currency,
+                    "expires_at": created_session.expires_at.isoformat(),
+                },
+            )
+
             self.db.commit()
             self.db.refresh(created_session)
 
@@ -151,10 +169,12 @@ class PaymentSessionService:
         self,
         payment_session_id: UUID,
         payload: PaymentSessionStatusUpdate,
+        current_user: User | None = None,
     ) -> PaymentSession:
         """Actualiza el estado de una sesión de pago."""
 
         payment_session = self.get_payment_session_by_id(payment_session_id)
+        previous_status = payment_session.status
         next_status = payload.status.strip().upper()
 
         if next_status not in ALLOWED_PAYMENT_SESSION_STATUSES:
@@ -171,7 +191,10 @@ class PaymentSessionService:
 
         now = datetime.now(timezone.utc)
 
-        if payment_session.expires_at < now and next_status not in {"EXPIRED", "CANCELLED"}:
+        if payment_session.expires_at < now and next_status not in {
+            "EXPIRED",
+            "CANCELLED",
+        }:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="La sesión de pago ya expiró.",
@@ -196,6 +219,32 @@ class PaymentSessionService:
 
         try:
             updated_session = self.payment_session_repository.update(payment_session)
+
+            self.audit_log_service.register_action(
+                action="ACTUALIZAR_ESTADO_SESION_PAGO",
+                entity_name="PAYMENT_SESSION",
+                entity_id=updated_session.id,
+                current_user=current_user,
+                old_values={
+                    "status": previous_status,
+                },
+                new_values={
+                    "status": updated_session.status,
+                    "viewed_at": updated_session.viewed_at.isoformat()
+                    if updated_session.viewed_at
+                    else None,
+                    "processing_at": updated_session.processing_at.isoformat()
+                    if updated_session.processing_at
+                    else None,
+                    "completed_at": updated_session.completed_at.isoformat()
+                    if updated_session.completed_at
+                    else None,
+                    "cancelled_at": updated_session.cancelled_at.isoformat()
+                    if updated_session.cancelled_at
+                    else None,
+                },
+            )
+
             self.db.commit()
             self.db.refresh(updated_session)
 

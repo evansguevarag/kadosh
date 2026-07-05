@@ -56,4 +56,4 @@ def mark_sale_as_paid(
 ) -> SaleResponse:
     service = SaleService(db)
 
-    return service.mark_sale_as_paid(sale_id)
+    return service.mark_sale_as_paid(sale_id, current_user)

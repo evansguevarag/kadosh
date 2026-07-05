@@ -56,4 +56,4 @@ def register_manual_payment(
 ) -> PaymentResponse:
     service = PaymentService(db)
 
-    return service.register_manual_payment(payload)
+    return service.register_manual_payment(payload, current_user)
