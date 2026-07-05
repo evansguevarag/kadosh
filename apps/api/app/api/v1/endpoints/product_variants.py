@@ -25,16 +25,6 @@ def list_product_variants(
     return service.list_active_variants()
 
 
-@router.get("/{variant_id}", response_model=ProductVariantResponse)
-def get_product_variant(
-    variant_id: UUID,
-    db: Session = Depends(get_db),
-) -> ProductVariantResponse:
-    service = ProductVariantService(db)
-
-    return service.get_variant_by_id(variant_id)
-
-
 @router.get(
     "/by-product/{product_id}",
     response_model=list[ProductVariantResponse],
@@ -46,6 +36,16 @@ def list_variants_by_product(
     service = ProductVariantService(db)
 
     return service.list_variants_by_product(product_id)
+
+
+@router.get("/{variant_id}", response_model=ProductVariantResponse)
+def get_product_variant(
+    variant_id: UUID,
+    db: Session = Depends(get_db),
+) -> ProductVariantResponse:
+    service = ProductVariantService(db)
+
+    return service.get_variant_by_id(variant_id)
 
 
 @router.post(

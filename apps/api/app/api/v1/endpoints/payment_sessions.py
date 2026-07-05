@@ -26,17 +26,6 @@ def list_payment_sessions(
     return service.list_payment_sessions()
 
 
-@router.get("/{payment_session_id}", response_model=PaymentSessionResponse)
-def get_payment_session(
-    payment_session_id: UUID,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles("ADMIN", "SELLER", "CASHIER")),
-) -> PaymentSessionResponse:
-    service = PaymentSessionService(db)
-
-    return service.get_payment_session_by_id(payment_session_id)
-
-
 @router.get(
     "/by-sale/{sale_id}",
     response_model=list[PaymentSessionResponse],
@@ -63,6 +52,17 @@ def list_active_sessions_by_device(
     service = PaymentSessionService(db)
 
     return service.list_active_sessions_by_device(device_id)
+
+
+@router.get("/{payment_session_id}", response_model=PaymentSessionResponse)
+def get_payment_session(
+    payment_session_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("ADMIN", "SELLER", "CASHIER")),
+) -> PaymentSessionResponse:
+    service = PaymentSessionService(db)
+
+    return service.get_payment_session_by_id(payment_session_id)
 
 
 @router.post(

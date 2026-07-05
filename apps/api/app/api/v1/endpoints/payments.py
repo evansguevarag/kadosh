@@ -22,17 +22,6 @@ def list_payments(
     return service.list_payments()
 
 
-@router.get("/{payment_id}", response_model=PaymentResponse)
-def get_payment(
-    payment_id: UUID,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles("ADMIN", "SELLER", "CASHIER")),
-) -> PaymentResponse:
-    service = PaymentService(db)
-
-    return service.get_payment_by_id(payment_id)
-
-
 @router.get("/by-sale/{sale_id}", response_model=list[PaymentResponse])
 def list_payments_by_sale(
     sale_id: UUID,
@@ -42,6 +31,17 @@ def list_payments_by_sale(
     service = PaymentService(db)
 
     return service.list_payments_by_sale(sale_id)
+
+
+@router.get("/{payment_id}", response_model=PaymentResponse)
+def get_payment(
+    payment_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("ADMIN", "SELLER", "CASHIER")),
+) -> PaymentResponse:
+    service = PaymentService(db)
+
+    return service.get_payment_by_id(payment_id)
 
 
 @router.post(
