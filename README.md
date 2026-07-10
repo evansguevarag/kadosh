@@ -7,7 +7,7 @@ Sistema de punto de venta para tienda urbana Kadosh: productos, variantes, inven
 - Frontend: Next.js, TypeScript, Tailwind CSS
 - Backend: FastAPI, SQLAlchemy
 - Base de datos: PostgreSQL/Supabase
-- Reportes: pandas, numpy
+- Reportes: Python y SQLAlchemy
 - Pagos externos: Culqi
 
 ## Levantar API

@@ -9,7 +9,8 @@ router = APIRouter(prefix="/system", tags=["System"])
 @router.get("/ping")
 def ping_database() -> dict[str, str]:
     try:
-        check_database_connection()
+        if not check_database_connection():
+            raise RuntimeError("Database connection is not available.")
 
         return {
             "status": "ok",

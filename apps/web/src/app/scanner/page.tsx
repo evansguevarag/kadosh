@@ -2,6 +2,7 @@
 
 import {
   FormEvent,
+  Suspense,
   useCallback,
   useEffect,
   useMemo,
@@ -73,7 +74,7 @@ function getScannerConfig(
   };
 }
 
-export default function ScannerPage() {
+function ScannerPageContent() {
   const routeParams = useParams<{
     sessionId?: string | string[];
     pairingToken?: string | string[];
@@ -389,5 +390,22 @@ export default function ScannerPage() {
         </form>
       </div>
     </main>
+  );
+}
+
+export default function ScannerPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-screen items-center justify-center bg-slate-950 text-white">
+          <div className="flex items-center gap-3 text-sm font-medium">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            Preparando escáner...
+          </div>
+        </main>
+      }
+    >
+      <ScannerPageContent />
+    </Suspense>
   );
 }

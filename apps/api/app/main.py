@@ -1,5 +1,8 @@
+from time import perf_counter
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.requests import Request
 
 from app.api.v1.router import api_router
 from app.core.config import settings
@@ -31,9 +34,20 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["Server-Timing", "X-Process-Time-Ms"],
 )
 
 app.include_router(api_router, prefix=settings.api_v1_prefix)
+
+
+@app.middleware("http")
+async def add_process_timing(request: Request, call_next):
+    started_at = perf_counter()
+    response = await call_next(request)
+    elapsed_ms = (perf_counter() - started_at) * 1000
+    response.headers["Server-Timing"] = f"app;dur={elapsed_ms:.2f}"
+    response.headers["X-Process-Time-Ms"] = f"{elapsed_ms:.2f}"
+    return response
 
 
 @app.get("/")

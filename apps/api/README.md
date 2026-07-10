@@ -12,8 +12,6 @@ Backend profesional para el sistema POS de la tienda de ropa urbana Kadosh.
 - RBAC
 - Culqi
 - ApiPeruDev
-- pandas
-- numpy
 
 ## Ejecutar backend
 
@@ -42,7 +40,7 @@ http://localhost:8000/docs
 - Culqi
 - Sesiones de pago para tablet
 - Pantalla del cliente con X-Device-Secret
-- Reportes con pandas y numpy
+- Reportes operativos con Python y SQLAlchemy
 - Auditoria
 
 ## Estado

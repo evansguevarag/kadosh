@@ -2,8 +2,6 @@ from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 from zoneinfo import ZoneInfo
 
-import numpy as np
-import pandas as pd
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.orm import Session
@@ -20,7 +18,7 @@ from app.schemas.report import (
 
 
 class ReportService:
-    """Servicio de reportes usando pandas y numpy."""
+    """Servicio de reportes operativos."""
 
     def __init__(self, db: Session) -> None:
         self.db = db
@@ -93,7 +91,7 @@ class ReportService:
         )
 
     def _build_sales_summary(self, sales: list[Sale]) -> SalesSummaryReportResponse:
-        """Calcula métricas generales de ventas con pandas y numpy."""
+        """Calcula métricas generales de ventas."""
 
         if not sales:
             return SalesSummaryReportResponse(
@@ -105,86 +103,55 @@ class ReportService:
                 average_ticket=Decimal("0.00"),
             )
 
-        sales_data = [
-            {
-                "status": sale.status,
-                "total": float(sale.total),
-            }
-            for sale in sales
-        ]
-
-        sales_dataframe = pd.DataFrame(sales_data)
-
-        total_sales = int(len(sales_dataframe))
-        paid_sales = int((sales_dataframe["status"] == "PAID").sum())
-        pending_sales = int((sales_dataframe["status"] == "PENDING_PAYMENT").sum())
-        cancelled_sales = int((sales_dataframe["status"] == "CANCELLED").sum())
-
-        paid_sales_dataframe = sales_dataframe[sales_dataframe["status"] == "PAID"]
-
-        total_revenue_value = (
-            np.round(paid_sales_dataframe["total"].sum(), 2)
-            if not paid_sales_dataframe.empty
-            else 0.00
-        )
-
-        average_ticket_value = (
-            np.round(paid_sales_dataframe["total"].mean(), 2)
-            if not paid_sales_dataframe.empty
-            else 0.00
+        paid_totals = [sale.total for sale in sales if sale.status == "PAID"]
+        total_revenue = sum(paid_totals, start=Decimal("0.00"))
+        average_ticket = (
+            total_revenue / len(paid_totals)
+            if paid_totals
+            else Decimal("0.00")
         )
 
         return SalesSummaryReportResponse(
-            total_sales=total_sales,
-            paid_sales=paid_sales,
-            pending_sales=pending_sales,
-            cancelled_sales=cancelled_sales,
-            total_revenue=Decimal(str(total_revenue_value)),
-            average_ticket=Decimal(str(average_ticket_value)),
+            total_sales=len(sales),
+            paid_sales=len(paid_totals),
+            pending_sales=sum(
+                sale.status == "PENDING_PAYMENT" for sale in sales
+            ),
+            cancelled_sales=sum(sale.status == "CANCELLED" for sale in sales),
+            total_revenue=total_revenue.quantize(Decimal("0.01")),
+            average_ticket=average_ticket.quantize(Decimal("0.01")),
         )
 
     def _build_low_stock_products(
         self,
         variants: list[ProductVariant],
     ) -> list[LowStockProductResponse]:
-        """Obtiene variantes con stock bajo usando pandas."""
+        """Obtiene variantes activas con stock bajo."""
 
         if not variants:
             return []
 
-        variants_data = [
-            {
-                "product_variant_id": str(variant.id),
-                "product_name": variant.product.name if variant.product else "Producto",
-                "sku": variant.sku,
-                "size": variant.size,
-                "color": variant.color,
-                "stock_quantity": variant.stock_quantity,
-                "min_stock_quantity": variant.min_stock_quantity,
-                "is_active": variant.is_active,
-            }
-            for variant in variants
-        ]
-
-        variants_dataframe = pd.DataFrame(variants_data)
-
-        low_stock_dataframe = variants_dataframe[
-            (variants_dataframe["is_active"] == True)
-            & (
-                variants_dataframe["stock_quantity"]
-                <= variants_dataframe["min_stock_quantity"]
-            )
-        ].sort_values(by="stock_quantity", ascending=True)
+        low_stock_variants = sorted(
+            (
+                variant
+                for variant in variants
+                if variant.is_active
+                and variant.stock_quantity <= variant.min_stock_quantity
+            ),
+            key=lambda variant: variant.stock_quantity,
+        )
 
         return [
             LowStockProductResponse(
-                product_variant_id=row["product_variant_id"],
-                product_name=row["product_name"],
-                sku=row["sku"],
-                size=row["size"],
-                color=row["color"],
-                stock_quantity=int(row["stock_quantity"]),
-                min_stock_quantity=int(row["min_stock_quantity"]),
+                product_variant_id=str(variant.id),
+                product_name=(
+                    variant.product.name if variant.product else "Producto"
+                ),
+                sku=variant.sku,
+                size=variant.size,
+                color=variant.color,
+                stock_quantity=variant.stock_quantity,
+                min_stock_quantity=variant.min_stock_quantity,
             )
-            for _, row in low_stock_dataframe.iterrows()
+            for variant in low_stock_variants
         ]
