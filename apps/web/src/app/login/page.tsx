@@ -58,7 +58,7 @@ export default function LoginPage() {
   return (
     <main className="min-h-screen bg-white text-slate-950">
       <div className="mx-auto grid min-h-screen max-w-6xl items-center gap-8 px-4 py-6 sm:px-6 sm:py-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-12">
-        <section className="order-2 min-w-0 space-y-6 lg:order-1 lg:space-y-8">
+        <section className="hidden min-w-0 space-y-8 lg:order-1 lg:block">
           <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700">
             <ShoppingBag className="h-4 w-4" />
             Kadosh
@@ -94,7 +94,7 @@ export default function LoginPage() {
           </div>
         </section>
 
-        <Card className="order-1 min-w-0 border-slate-200 bg-white shadow-xl shadow-slate-200/70 lg:order-2 lg:shadow-2xl">
+        <Card className="order-1 w-full min-w-0 max-w-md justify-self-center border-slate-200 bg-white shadow-xl shadow-slate-200/70 lg:order-2 lg:max-w-none lg:shadow-2xl">
           <CardHeader className="space-y-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-950 text-white">
               <LockKeyhole className="h-6 w-6" />
