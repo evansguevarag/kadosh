@@ -548,7 +548,49 @@ export default function ReportsPage() {
                 <CardTitle>Ventas del periodo</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="max-h-[560px] overflow-auto rounded-lg border">
+                <div className="space-y-3 md:hidden">
+                  {filteredSales.map((sale) => {
+                    const itemCount = sale.items.reduce(
+                      (total, item) => total + item.quantity,
+                      0,
+                    );
+
+                    return (
+                      <div key={sale.id} className="rounded-lg border bg-white p-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="truncate font-semibold">
+                              {sale.sale_number}
+                            </p>
+                            <p className="mt-1 text-xs text-slate-500">
+                              {new Date(sale.created_at).toLocaleString("es-PE")}
+                            </p>
+                          </div>
+                          <p className="shrink-0 text-lg font-bold">
+                            {formatMoney(sale.total)}
+                          </p>
+                        </div>
+                        <div className="mt-3 flex items-center justify-between gap-3 border-t pt-3 text-sm">
+                          <div className="min-w-0">
+                            <p className="truncate font-medium">
+                              {sale.customer
+                                ? `${sale.customer.first_name} ${sale.customer.last_name || ""}`.trim()
+                                : "Cliente general"}
+                            </p>
+                            <p className="mt-1 text-xs text-slate-500">
+                              {itemCount} producto{itemCount === 1 ? "" : "s"}
+                            </p>
+                          </div>
+                          <span className="shrink-0 text-xs font-medium text-slate-600">
+                            {formatSaleStatus(sale.status)}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="hidden max-h-[560px] overflow-auto rounded-lg border md:block">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -602,7 +644,30 @@ export default function ReportsPage() {
                     No hay productos vendidos en el rango seleccionado.
                   </p>
                 ) : (
-                  <div className="max-h-[560px] overflow-auto rounded-lg border">
+                  <>
+                    <div className="space-y-3 md:hidden">
+                      {topProducts.map((product, index) => (
+                        <div
+                          key={product.sku}
+                          className="flex items-center gap-3 rounded-lg border bg-white p-3"
+                        >
+                          <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-slate-950 text-sm font-bold text-white">
+                            {index + 1}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate font-semibold">{product.sku}</p>
+                            <p className="mt-1 text-xs text-slate-500">
+                              {product.quantity} unidades
+                            </p>
+                          </div>
+                          <p className="shrink-0 font-bold">
+                            {formatMoney(product.revenue)}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="hidden max-h-[560px] overflow-auto rounded-lg border md:block">
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -625,7 +690,8 @@ export default function ReportsPage() {
                         ))}
                       </TableBody>
                     </Table>
-                  </div>
+                    </div>
+                  </>
                 )}
               </CardContent>
             </Card>
@@ -645,7 +711,35 @@ export default function ReportsPage() {
                     No hay productos con bajo stock.
                   </p>
                 ) : (
-                  <div className="max-h-[560px] overflow-auto rounded-lg border">
+                  <>
+                    <div className="space-y-3 md:hidden">
+                      {dashboard.low_stock_products.map((product) => (
+                        <div
+                          key={product.product_variant_id}
+                          className="rounded-lg border border-amber-200 bg-amber-50/60 p-3"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="truncate font-semibold">
+                                {product.product_name}
+                              </p>
+                              <p className="mt-1 truncate text-xs text-slate-500">
+                                {product.sku}
+                              </p>
+                            </div>
+                            <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600" />
+                          </div>
+                          <div className="mt-3 flex items-center justify-between border-t border-amber-200 pt-3 text-sm">
+                            <span className="text-slate-600">Stock / mínimo</span>
+                            <span className="text-lg font-bold text-amber-800">
+                              {product.stock_quantity} / {product.min_stock_quantity}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="hidden max-h-[560px] overflow-auto rounded-lg border md:block">
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -668,7 +762,8 @@ export default function ReportsPage() {
                         ))}
                       </TableBody>
                     </Table>
-                  </div>
+                    </div>
+                  </>
                 )}
               </CardContent>
             </Card>

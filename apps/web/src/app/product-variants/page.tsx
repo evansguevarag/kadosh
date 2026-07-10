@@ -545,7 +545,83 @@ export default function ProductVariantsPage() {
                 Todavía no hay presentaciones registradas.
               </p>
             ) : (
-              <div className="overflow-hidden rounded-xl border">
+              <>
+                <div className="space-y-3 md:hidden">
+                  {variants.map((variant) => (
+                    <div key={variant.id} className="rounded-lg border bg-white p-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate font-semibold">{variant.sku}</p>
+                          <p className="mt-1 truncate text-xs text-slate-500">
+                            {variant.barcode || "Sin código"}
+                          </p>
+                        </div>
+                        <Badge variant={statusBadgeVariant(variant.status)}>
+                          {variant.is_active ? "Activa" : "Inactiva"}
+                        </Badge>
+                      </div>
+                      <div className="mt-3 grid grid-cols-2 gap-3 border-t pt-3 text-sm">
+                        <div>
+                          <p className="text-xs text-slate-500">Presentación</p>
+                          <p className="mt-1 font-medium">
+                            {[variant.size, variant.color]
+                              .filter(Boolean)
+                              .join(" · ") || "-"}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs text-slate-500">Precio / stock</p>
+                          <p className="mt-1 font-semibold">
+                            S/ {variant.sale_price} · {variant.stock_quantity}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="mt-3 grid grid-cols-[auto_1fr_1fr] gap-2">
+                        <button
+                          aria-label={
+                            variant.is_active
+                              ? `Desactivar ${variant.sku}`
+                              : `Activar ${variant.sku}`
+                          }
+                          aria-checked={variant.is_active}
+                          className={`relative h-8 w-12 self-center rounded-full transition ${
+                            variant.is_active ? "bg-slate-950" : "bg-slate-300"
+                          }`}
+                          disabled={updatingVariantId === variant.id}
+                          role="switch"
+                          type="button"
+                          onClick={() => void handleToggleVariant(variant)}
+                        >
+                          <span
+                            className={`absolute top-1.5 h-5 w-5 rounded-full bg-white transition ${
+                              variant.is_active ? "left-6" : "left-1"
+                            }`}
+                          />
+                        </button>
+                        <Button
+                          size="sm"
+                          type="button"
+                          variant="outline"
+                          onClick={() => openEditDialog(variant)}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                          Editar
+                        </Button>
+                        <Button
+                          size="sm"
+                          type="button"
+                          variant="outline"
+                          onClick={() => handlePrintLabel(variant)}
+                        >
+                          <Printer className="h-3.5 w-3.5" />
+                          Etiqueta
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="hidden overflow-hidden rounded-xl border md:block">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -625,7 +701,8 @@ export default function ProductVariantsPage() {
                     ))}
                   </TableBody>
                 </Table>
-              </div>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>

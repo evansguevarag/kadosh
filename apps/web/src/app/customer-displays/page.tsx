@@ -12,6 +12,7 @@ import {
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/layout/app-shell";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -246,7 +247,45 @@ export default function CustomerDisplaysPage() {
                 Todavía no hay tablets vinculadas.
               </p>
             ) : (
-              <div className="overflow-hidden rounded-xl border">
+              <>
+                <div className="space-y-3 md:hidden">
+                  {devices.map((device) => (
+                    <div key={device.id} className="rounded-lg border bg-white p-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate font-semibold">
+                            {device.device_name}
+                          </p>
+                          <p className="mt-1 text-xs text-slate-500">
+                            Última conexión: {formatDate(device.last_seen_at)}
+                          </p>
+                        </div>
+                        <Badge variant={device.is_active ? "default" : "outline"}>
+                          {device.is_active ? "Activa" : "Desactivada"}
+                        </Badge>
+                      </div>
+                      <Button
+                        className="mt-3 w-full"
+                        size="sm"
+                        variant="outline"
+                        disabled={
+                          !device.is_active ||
+                          isDeactivatingDeviceId === device.id
+                        }
+                        onClick={() => void handleDeactivateDevice(device.id)}
+                      >
+                        {isDeactivatingDeviceId === device.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <PowerOff className="h-4 w-4" />
+                        )}
+                        Desactivar
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="hidden overflow-hidden rounded-xl border md:block">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -291,7 +330,8 @@ export default function CustomerDisplaysPage() {
                     ))}
                   </TableBody>
                 </Table>
-              </div>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>

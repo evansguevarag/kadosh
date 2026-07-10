@@ -13,6 +13,7 @@ import { toast } from "sonner";
 
 import { AppShell } from "@/components/layout/app-shell";
 import { EmptyState, LoadingState } from "@/components/ui/async-state";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -176,7 +177,45 @@ export default function CustomersPage() {
               }
             />
           ) : (
-            <div className="max-h-[560px] overflow-auto rounded-xl border">
+            <>
+              <div className="space-y-3 md:hidden">
+                {filteredCustomers.map((customer) => (
+                  <div
+                    key={customer.id}
+                    className="rounded-lg border bg-white p-3"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-slate-950">
+                          {customer.first_name} {customer.last_name}
+                        </p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          {customer.document_type} {customer.document_number}
+                        </p>
+                      </div>
+                      <Badge variant={customer.is_active ? "default" : "outline"}>
+                        {customer.is_active ? "Activo" : "Inactivo"}
+                      </Badge>
+                    </div>
+                    <dl className="mt-3 grid gap-2 border-t pt-3 text-sm">
+                      <div className="flex min-w-0 justify-between gap-4">
+                        <dt className="text-slate-500">Teléfono</dt>
+                        <dd className="truncate font-medium">
+                          {customer.phone || "-"}
+                        </dd>
+                      </div>
+                      <div className="flex min-w-0 justify-between gap-4">
+                        <dt className="text-slate-500">Correo</dt>
+                        <dd className="truncate font-medium">
+                          {customer.email || "-"}
+                        </dd>
+                      </div>
+                    </dl>
+                  </div>
+                ))}
+              </div>
+
+              <div className="hidden max-h-[560px] overflow-auto rounded-xl border md:block">
               <Table>
                 <TableHeader className="sticky top-0 z-10 bg-white">
                   <TableRow>
@@ -213,7 +252,8 @@ export default function CustomersPage() {
                   ))}
                 </TableBody>
               </Table>
-            </div>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

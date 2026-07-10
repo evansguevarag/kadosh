@@ -229,7 +229,49 @@ export default function SalesPage() {
                 description="Cambia el estado o busca por número de venta, cliente o DNI."
               />
             ) : (
-              <div className="max-h-[560px] overflow-auto rounded-xl border">
+              <>
+                <div className="space-y-3 md:hidden">
+                  {filteredSales.map((sale) => (
+                    <Link
+                      key={sale.id}
+                      href={`/sales/${sale.id}`}
+                      className="block rounded-lg border bg-white p-3 transition active:bg-slate-50"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate font-semibold text-slate-950">
+                            {sale.sale_number}
+                          </p>
+                          <p className="mt-1 text-xs text-slate-500">
+                            {formatDateTime(sale.created_at)}
+                          </p>
+                        </div>
+                        <Badge variant={statusBadgeVariant(sale.status)}>
+                          {formatSaleStatus(sale.status)}
+                        </Badge>
+                      </div>
+                      <div className="mt-3 flex items-end justify-between gap-3 border-t pt-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium">
+                            {formatCustomerName(sale)}
+                          </p>
+                          <p className="mt-1 text-xs text-slate-500">
+                            {sale.items.length} artículo
+                            {sale.items.length === 1 ? "" : "s"}
+                            {sale.customer?.document_number
+                              ? ` · ${sale.customer.document_type} ${sale.customer.document_number}`
+                              : ""}
+                          </p>
+                        </div>
+                        <p className="shrink-0 text-lg font-bold">
+                          {formatMoney(sale.total)}
+                        </p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+
+                <div className="hidden max-h-[560px] overflow-auto rounded-xl border md:block">
                 <Table>
                   <TableHeader className="sticky top-0 z-10 bg-white">
                     <TableRow>
@@ -283,7 +325,8 @@ export default function SalesPage() {
                     ))}
                   </TableBody>
                 </Table>
-              </div>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>

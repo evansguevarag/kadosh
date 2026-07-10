@@ -218,7 +218,46 @@ export default function SaleDetailPage() {
                 <CardTitle>Productos vendidos</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="overflow-hidden rounded-xl border">
+                <div className="space-y-3 md:hidden">
+                  {sale.items.map((item) => (
+                    <div key={item.id} className="rounded-lg border bg-white p-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate font-semibold">
+                            {item.product_name}
+                          </p>
+                          <p className="mt-1 truncate text-xs text-slate-500">
+                            {item.variant_sku} · {item.size || "-"} ·{" "}
+                            {item.color || "-"}
+                          </p>
+                        </div>
+                        <p className="shrink-0 font-bold">
+                          {formatMoney(item.subtotal)}
+                        </p>
+                      </div>
+                      <dl className="mt-3 grid grid-cols-3 gap-2 border-t pt-3 text-center">
+                        <div>
+                          <dt className="text-xs text-slate-500">Cantidad</dt>
+                          <dd className="mt-1 font-semibold">{item.quantity}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-xs text-slate-500">Precio</dt>
+                          <dd className="mt-1 font-semibold">
+                            {formatMoney(item.unit_price)}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-xs text-slate-500">Descuento</dt>
+                          <dd className="mt-1 font-semibold">
+                            {formatMoney(item.discount_amount)}
+                          </dd>
+                        </div>
+                      </dl>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="hidden overflow-hidden rounded-xl border md:block">
                   <Table>
                     <TableHeader>
                       <TableRow>

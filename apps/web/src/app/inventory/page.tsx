@@ -393,7 +393,55 @@ export default function InventoryPage() {
               ) : variants.length === 0 ? (
                 <EmptyState title="Todavía no hay presentaciones activas." />
               ) : (
-                <div className="max-h-[560px] overflow-auto rounded-xl border">
+                <>
+                  <div className="space-y-3 md:hidden">
+                    {variants.map((variant) => {
+                      const isLowStock =
+                        variant.stock_quantity <= variant.min_stock_quantity;
+
+                      return (
+                        <div
+                          key={variant.id}
+                          className="rounded-lg border bg-white p-3"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="truncate font-semibold">
+                                {variant.sku}
+                              </p>
+                              <p className="mt-1 truncate text-xs text-slate-500">
+                                {variant.barcode || "Sin código"}
+                              </p>
+                            </div>
+                            <Badge variant={isLowStock ? "destructive" : "default"}>
+                              {isLowStock ? "Bajo stock" : "Disponible"}
+                            </Badge>
+                          </div>
+                          <div className="mt-3 grid grid-cols-2 gap-3 border-t pt-3 text-sm">
+                            <div>
+                              <p className="text-xs text-slate-500">Presentación</p>
+                              <p className="mt-1 font-medium">
+                                {[variant.size, variant.color]
+                                  .filter(Boolean)
+                                  .join(" · ") || "-"}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-xs text-slate-500">Stock / mínimo</p>
+                              <p className="mt-1 text-lg font-bold">
+                                {variant.stock_quantity}
+                                <span className="text-sm font-normal text-slate-400">
+                                  {" "}/ {variant.min_stock_quantity}
+                                </span>
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="hidden max-h-[560px] overflow-auto rounded-xl border md:block">
                   <Table>
                     <TableHeader className="sticky top-0 z-10 bg-white">
                       <TableRow>
@@ -434,7 +482,8 @@ export default function InventoryPage() {
                       })}
                     </TableBody>
                   </Table>
-                </div>
+                  </div>
+                </>
               )}
             </CardContent>
           </Card>
@@ -703,7 +752,63 @@ export default function InventoryPage() {
             ) : filteredMovements.length === 0 ? (
               <EmptyState title="Todavía no hay movimientos registrados." />
             ) : (
-              <div className="max-h-[560px] overflow-auto rounded-xl border">
+              <>
+                <div className="space-y-3 md:hidden">
+                  {filteredMovements.map((movement) => {
+                    const variant = variants.find(
+                      (currentVariant) =>
+                        currentVariant.id === movement.product_variant_id,
+                    );
+                    const delta = getMovementDelta(movement);
+                    const config =
+                      movementConfig[
+                        movement.movement_type as typeof movementType
+                      ];
+
+                    return (
+                      <div
+                        key={movement.id}
+                        className="rounded-lg border bg-white p-3"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="truncate font-semibold">
+                              {variant?.sku ?? "Presentación"}
+                            </p>
+                            <p className="mt-1 text-xs text-slate-500">
+                              {formatDate(movement.created_at)}
+                            </p>
+                          </div>
+                          <Badge variant={config?.badge ?? "outline"}>
+                            {config?.label ?? movement.movement_type}
+                          </Badge>
+                        </div>
+                        <div className="mt-3 flex items-center justify-between gap-3 border-t pt-3">
+                          <div>
+                            <p className="text-xs text-slate-500">Stock</p>
+                            <p className="mt-1 font-medium">
+                              {movement.previous_stock} → {movement.new_stock}
+                            </p>
+                          </div>
+                          <p
+                            className={`text-xl font-bold ${
+                              delta >= 0 ? "text-emerald-700" : "text-red-700"
+                            }`}
+                          >
+                            {formatDelta(delta)}
+                          </p>
+                        </div>
+                        {movement.reason ? (
+                          <p className="mt-3 break-words text-sm text-slate-500">
+                            {movement.reason}
+                          </p>
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="hidden max-h-[560px] overflow-auto rounded-xl border md:block">
                 <Table>
                   <TableHeader className="sticky top-0 z-10 bg-white">
                     <TableRow>
@@ -757,7 +862,8 @@ export default function InventoryPage() {
                     })}
                   </TableBody>
                 </Table>
-              </div>
+                </div>
+              </>
             )}
           </CardContent>
           </Card>
