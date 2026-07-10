@@ -81,13 +81,13 @@ const Toaster = ({ ...props }: ToasterProps) => {
         closeButtonAriaLabel: "Cerrar notificación",
         classNames: {
           toast:
-            "cn-toast !min-h-14 !rounded-xl !border-slate-200/80 !bg-white/95 !px-3.5 !py-3 !text-slate-950 !shadow-[0_18px_50px_-20px_rgba(15,23,42,0.45)] !backdrop-blur-xl",
+            "cn-toast !min-h-14 !rounded-xl !border-slate-200/80 !bg-white/95 !py-3 !pl-3.5 !pr-12 !text-slate-950 !shadow-[0_18px_50px_-20px_rgba(15,23,42,0.45)] !backdrop-blur-xl",
           content: "!gap-0.5",
           title: "!text-[13px] !font-semibold !leading-5",
           description: "!text-xs !leading-4 !text-slate-500",
           icon: "!mr-1 !size-7",
           closeButton:
-            "!left-auto !right-2 !top-2 !size-6 !translate-x-0 !translate-y-0 !border-0 !bg-slate-100 !text-slate-500 hover:!bg-slate-200 hover:!text-slate-800",
+            "!left-auto !right-3 !top-1/2 !size-7 !translate-x-0 !-translate-y-1/2 !border-0 !bg-slate-100 !text-slate-500 hover:!bg-slate-200 hover:!text-slate-800",
         },
       }}
       {...props}
