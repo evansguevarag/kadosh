@@ -1,4 +1,4 @@
-# Kadosh POS
+# Kadosh
 
 Sistema de punto de venta para tienda urbana Kadosh: productos, variantes, inventario, clientes, POS, pagos, pantalla de cliente, scanner móvil y reportes.
 
