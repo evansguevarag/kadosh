@@ -7,6 +7,7 @@ from app.api.v1.dependencies import get_db
 from app.api.v1.security import require_roles
 from app.models.user import User
 from app.schemas.product_variant import (
+    ProductVariantBarcodeBackfillResponse,
     ProductVariantCreate,
     ProductVariantResponse,
     ProductVariantUpdate,
@@ -22,7 +23,7 @@ def list_product_variants(
 ) -> list[ProductVariantResponse]:
     service = ProductVariantService(db)
 
-    return service.list_active_variants()
+    return service.list_variants()
 
 
 @router.get(
@@ -36,6 +37,37 @@ def list_variants_by_product(
     service = ProductVariantService(db)
 
     return service.list_variants_by_product(product_id)
+
+
+@router.get("/by-code/{code}", response_model=ProductVariantResponse)
+def get_product_variant_by_code(
+    code: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("ADMIN", "SELLER", "CASHIER")),
+) -> ProductVariantResponse:
+    service = ProductVariantService(db)
+
+    return service.get_active_variant_by_code(code)
+
+
+@router.post(
+    "/barcodes/generate-missing",
+    response_model=ProductVariantBarcodeBackfillResponse,
+)
+def generate_missing_variant_barcodes(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("ADMIN")),
+) -> ProductVariantBarcodeBackfillResponse:
+    service = ProductVariantService(db)
+    updated_variants = service.generate_missing_barcodes()
+
+    return ProductVariantBarcodeBackfillResponse(
+        updated_count=len(updated_variants),
+        variants=[
+            ProductVariantResponse.model_validate(variant)
+            for variant in updated_variants
+        ],
+    )
 
 
 @router.get("/{variant_id}", response_model=ProductVariantResponse)

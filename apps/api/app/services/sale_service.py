@@ -255,6 +255,103 @@ class SaleService:
             self.db.rollback()
             raise
 
+    def cancel_sale(self, sale_id: UUID, current_user: User) -> Sale:
+        """Cancela una venta pendiente y devuelve sus unidades al inventario."""
+
+        sale = self.get_sale_by_id(sale_id)
+
+        if sale.status == "CANCELLED":
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="La venta ya se encuentra cancelada.",
+            )
+
+        if sale.status == "PAID":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No se puede cancelar una venta pagada.",
+            )
+
+        if any(payment.status == "PAID" for payment in sale.payments):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="La venta ya tiene un pago aprobado y no puede cancelarse.",
+            )
+
+        now = datetime.now(timezone.utc)
+        previous_status = sale.status
+
+        try:
+            for item in sale.items:
+                variant = self.variant_repository.find_by_id(
+                    item.product_variant_id
+                )
+
+                if variant is None:
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail=f"No se encontró el SKU {item.variant_sku} para devolver el stock.",
+                    )
+
+                previous_stock = variant.stock_quantity
+                variant.stock_quantity += item.quantity
+                self.db.add(variant)
+                self.inventory_movement_repository.create(
+                    InventoryMovement(
+                        product_variant_id=variant.id,
+                        user_id=current_user.id,
+                        sale_id=sale.id,
+                        movement_type="DEVOLUCION",
+                        quantity=item.quantity,
+                        previous_stock=previous_stock,
+                        new_stock=variant.stock_quantity,
+                        reason=f"Cancelación de venta {sale.sale_number}",
+                    )
+                )
+
+            for payment_session in sale.payment_sessions:
+                if payment_session.status not in {
+                    "PAID",
+                    "FAILED",
+                    "EXPIRED",
+                    "CANCELLED",
+                }:
+                    payment_session.status = "CANCELLED"
+                    payment_session.cancelled_at = now
+                    self.db.add(payment_session)
+
+            sale.status = "CANCELLED"
+            sale.cancelled_at = now
+            self.sale_repository.update(sale)
+
+            self.audit_log_service.register_action(
+                action="CANCELAR_VENTA",
+                entity_name="SALE",
+                entity_id=sale.id,
+                current_user=current_user,
+                old_values={"status": previous_status},
+                new_values={
+                    "status": sale.status,
+                    "cancelled_at": sale.cancelled_at.isoformat(),
+                    "restored_items": len(sale.items),
+                },
+            )
+
+            self.db.commit()
+
+            refreshed_sale = self.sale_repository.find_by_id(sale.id)
+
+            if refreshed_sale is None:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="No se pudo recuperar la venta cancelada.",
+                )
+
+            return refreshed_sale
+        except Exception:
+            self.db.rollback()
+            raise
+
     def _generate_sale_number(self) -> str:
         """Genera un número de venta único basado en fecha y hora."""
 

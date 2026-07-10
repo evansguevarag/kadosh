@@ -9,6 +9,7 @@ from app.models.product_variant import ProductVariant
 from app.models.role import Role
 from app.models.sale import Sale
 from app.models.sale_item import SaleItem
+from app.models.scanner_session import ScannerScan, ScannerSession
 from app.models.user import User
 
 __all__ = [
@@ -23,5 +24,8 @@ __all__ = [
     "Role",
     "Sale",
     "SaleItem",
+    "ScannerScan",
+    "ScannerSession",
     "User",
 ]
+from app.models.customer_display_device import CustomerDisplayDevice, CustomerDisplayPairingCode

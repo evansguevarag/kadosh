@@ -17,7 +17,7 @@ class SaleRepository:
 
         statement = (
             select(Sale)
-            .options(selectinload(Sale.items))
+            .options(selectinload(Sale.items), selectinload(Sale.customer))
             .order_by(Sale.created_at.desc())
         )
 
@@ -28,7 +28,7 @@ class SaleRepository:
 
         statement = (
             select(Sale)
-            .options(selectinload(Sale.items))
+            .options(selectinload(Sale.items), selectinload(Sale.customer))
             .where(Sale.id == sale_id)
         )
 
@@ -39,7 +39,7 @@ class SaleRepository:
 
         statement = (
             select(Sale)
-            .options(selectinload(Sale.items))
+            .options(selectinload(Sale.items), selectinload(Sale.customer))
             .where(Sale.sale_number == sale_number)
         )
 

@@ -23,6 +23,13 @@ class ProductRepository:
 
         return list(self.db.scalars(statement).all())
 
+    def find_all(self) -> list[Product]:
+        """Obtiene todos los productos ordenados por fecha de creación."""
+
+        statement = select(Product).order_by(Product.created_at.desc())
+
+        return list(self.db.scalars(statement).all())
+
     def find_by_id(self, product_id: UUID) -> Product | None:
         """Obtiene un producto por su identificador."""
 

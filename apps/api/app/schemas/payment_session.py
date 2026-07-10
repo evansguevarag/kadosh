@@ -2,7 +2,7 @@ from datetime import datetime
 from decimal import Decimal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class PaymentSessionCreate(BaseModel):
@@ -19,6 +19,10 @@ class PaymentSessionCreate(BaseModel):
         default=None,
         max_length=255,
         examples=["Por favor, revise el monto antes de pagar."],
+    )
+    receipt_email: EmailStr | None = Field(
+        default=None,
+        examples=["cliente@correo.com"],
     )
     expires_in_minutes: int = Field(
         default=10,
@@ -49,6 +53,7 @@ class PaymentSessionResponse(BaseModel):
     amount: Decimal
     currency: str
     customer_message: str | None
+    receipt_email: str | None
     expires_at: datetime
     viewed_at: datetime | None
     processing_at: datetime | None

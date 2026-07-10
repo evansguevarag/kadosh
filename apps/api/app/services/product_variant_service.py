@@ -12,6 +12,29 @@ from app.schemas.product_variant import ProductVariantCreate, ProductVariantUpda
 ALLOWED_VARIANT_STATUSES = {"ACTIVE", "INACTIVE", "DISCONTINUED"}
 
 
+def build_barcode_lookup_candidates(code: str) -> list[str]:
+    normalized_code = code.strip().upper()
+    candidates = [normalized_code]
+
+    if normalized_code.isdigit() and len(normalized_code) % 2 == 1:
+        candidates.append(f"0{normalized_code}")
+
+    return candidates
+
+
+def build_internal_barcode(sku: str) -> str:
+    normalized_sku = "".join(
+        character for character in sku.strip().upper() if character.isalnum()
+    )
+    hash_seed = normalized_sku or "ITEM"
+    hash_value = 0
+
+    for character in hash_seed:
+        hash_value = (hash_value * 31 + ord(character)) % 100000000
+
+    return f"77{hash_value:08d}"
+
+
 class ProductVariantService:
     """Servicio de lógica de negocio para variantes de productos."""
 
@@ -23,6 +46,11 @@ class ProductVariantService:
         """Lista todas las variantes activas."""
 
         return self.variant_repository.find_all_active()
+
+    def list_variants(self) -> list[ProductVariant]:
+        """Lista todas las variantes para gestión administrativa."""
+
+        return self.variant_repository.find_all()
 
     def list_variants_by_product(self, product_id: UUID) -> list[ProductVariant]:
         """Lista variantes activas de un producto."""
@@ -50,6 +78,37 @@ class ProductVariantService:
 
         return variant
 
+    def get_active_variant_by_code(self, code: str) -> ProductVariant:
+        """Obtiene una variante activa por código de barras o SKU."""
+
+        normalized_code = code.strip().upper()
+
+        if not normalized_code:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Ingresa un código válido.",
+            )
+
+        variant = None
+
+        for candidate in build_barcode_lookup_candidates(normalized_code):
+            variant = self.variant_repository.find_by_code(candidate)
+
+            if variant is not None:
+                break
+
+        if (
+            variant is None
+            or not variant.is_active
+            or variant.status != "ACTIVE"
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No se encontró una variante activa para ese código.",
+            )
+
+        return variant
+
     def create_variant(self, payload: ProductVariantCreate) -> ProductVariant:
         """Crea una variante validando producto, SKU y código de barras."""
 
@@ -70,16 +129,19 @@ class ProductVariantService:
                 detail="Ya existe una variante con ese SKU.",
             )
 
-        normalized_barcode = payload.barcode.strip() if payload.barcode else None
+        normalized_barcode = (
+            payload.barcode.strip().upper()
+            if payload.barcode
+            else self._build_unique_internal_barcode(normalized_sku)
+        )
 
-        if normalized_barcode:
-            existing_barcode = self.variant_repository.find_by_barcode(normalized_barcode)
+        existing_barcode = self.variant_repository.find_by_barcode(normalized_barcode)
 
-            if existing_barcode is not None:
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail="Ya existe una variante con ese código de barras.",
-                )
+        if existing_barcode is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Ya existe una variante con ese código de barras.",
+            )
 
         variant = ProductVariant(
             product_id=payload.product_id,
@@ -128,7 +190,7 @@ class ProductVariantService:
 
         if "barcode" in update_data:
             barcode = update_data["barcode"]
-            normalized_barcode = barcode.strip() if barcode else None
+            normalized_barcode = barcode.strip().upper() if barcode else None
 
             if normalized_barcode:
                 existing_barcode = self.variant_repository.find_by_barcode(
@@ -173,3 +235,28 @@ class ProductVariantService:
             variant.is_active = update_data["is_active"]
 
         return self.variant_repository.update(variant)
+
+    def generate_missing_barcodes(self) -> list[ProductVariant]:
+        """Completa códigos internos en variantes antiguas sin código."""
+
+        updated_variants: list[ProductVariant] = []
+
+        for variant in self.variant_repository.find_all():
+            if variant.barcode:
+                continue
+
+            variant.barcode = self._build_unique_internal_barcode(variant.sku)
+            updated_variants.append(self.variant_repository.update(variant))
+
+        return updated_variants
+
+    def _build_unique_internal_barcode(self, sku: str) -> str:
+        base_barcode = build_internal_barcode(sku)
+        barcode = base_barcode
+        suffix = 2
+
+        while self.variant_repository.find_by_barcode(barcode) is not None:
+            barcode = f"{int(base_barcode) + suffix:010d}"
+            suffix += 1
+
+        return barcode

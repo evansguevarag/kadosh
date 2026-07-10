@@ -2,6 +2,9 @@ from decimal import Decimal
 
 from pydantic import BaseModel, Field
 
+from app.schemas.payment import PaymentResponse
+from app.schemas.sale import SaleResponse
+
 
 class SalesSummaryReportResponse(BaseModel):
     """Resumen general de ventas."""
@@ -31,3 +34,11 @@ class ReportsDashboardResponse(BaseModel):
 
     sales_summary: SalesSummaryReportResponse
     low_stock_products: list[LowStockProductResponse]
+
+
+class ReportsDetailResponse(BaseModel):
+    """Datos de reportes limitados al periodo solicitado."""
+
+    dashboard: ReportsDashboardResponse
+    sales: list[SaleResponse]
+    payments: list[PaymentResponse]

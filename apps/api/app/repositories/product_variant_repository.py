@@ -23,6 +23,13 @@ class ProductVariantRepository:
 
         return list(self.db.scalars(statement).all())
 
+    def find_all(self) -> list[ProductVariant]:
+        """Obtiene todas las variantes."""
+
+        statement = select(ProductVariant).order_by(ProductVariant.created_at.desc())
+
+        return list(self.db.scalars(statement).all())
+
     def find_by_product_id(self, product_id: UUID) -> list[ProductVariant]:
         """Obtiene las variantes activas de un producto."""
 
@@ -55,6 +62,15 @@ class ProductVariantRepository:
         """Obtiene una variante por código de barras."""
 
         statement = select(ProductVariant).where(ProductVariant.barcode == barcode)
+
+        return self.db.scalar(statement)
+
+    def find_by_code(self, code: str) -> ProductVariant | None:
+        """Obtiene una variante por código de barras o SKU."""
+
+        statement = select(ProductVariant).where(
+            (ProductVariant.barcode == code) | (ProductVariant.sku == code)
+        )
 
         return self.db.scalar(statement)
 

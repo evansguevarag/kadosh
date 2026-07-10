@@ -1,14 +1,20 @@
+from datetime import date, datetime, time, timedelta
 from decimal import Decimal
+from zoneinfo import ZoneInfo
 
 import numpy as np
 import pandas as pd
+from sqlalchemy import func, select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.orm import Session
 
+from app.models.payment import Payment
 from app.models.product_variant import ProductVariant
 from app.models.sale import Sale
 from app.schemas.report import (
     LowStockProductResponse,
     ReportsDashboardResponse,
+    ReportsDetailResponse,
     SalesSummaryReportResponse,
 )
 
@@ -31,6 +37,59 @@ class ReportService:
         return ReportsDashboardResponse(
             sales_summary=sales_summary,
             low_stock_products=low_stock_products,
+        )
+
+    def get_detail_report(
+        self,
+        start_date: date,
+        end_date: date,
+    ) -> ReportsDetailResponse:
+        """Obtiene ventas y pagos del periodo usando límites de Lima."""
+
+        lima_timezone = ZoneInfo("America/Lima")
+        start_at = datetime.combine(
+            start_date,
+            time.min,
+            tzinfo=lima_timezone,
+        )
+        end_at = datetime.combine(
+            end_date + timedelta(days=1),
+            time.min,
+            tzinfo=lima_timezone,
+        )
+
+        sales_statement = (
+            select(Sale)
+            .options(
+                selectinload(Sale.items),
+                selectinload(Sale.customer),
+            )
+            .where(
+                Sale.created_at >= start_at,
+                Sale.created_at < end_at,
+            )
+            .order_by(Sale.created_at.desc())
+        )
+        payments_statement = (
+            select(Payment)
+            .where(
+                func.coalesce(Payment.paid_at, Payment.created_at) >= start_at,
+                func.coalesce(Payment.paid_at, Payment.created_at) < end_at,
+            )
+            .order_by(Payment.created_at.desc())
+        )
+
+        sales = list(self.db.scalars(sales_statement).all())
+        payments = list(self.db.scalars(payments_statement).all())
+        variants = list(self.db.scalars(select(ProductVariant)).all())
+
+        return ReportsDetailResponse(
+            dashboard=ReportsDashboardResponse(
+                sales_summary=self._build_sales_summary(sales),
+                low_stock_products=self._build_low_stock_products(variants),
+            ),
+            sales=sales,
+            payments=payments,
         )
 
     def _build_sales_summary(self, sales: list[Sale]) -> SalesSummaryReportResponse:

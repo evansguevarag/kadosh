@@ -9,7 +9,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Kadosh POS",
+  title: "Kadosh",
   description:
     "Sistema profesional de punto de venta para tienda de ropa urbana Kadosh.",
 };

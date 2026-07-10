@@ -1,36 +1,91 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Kadosh POS - Web
 
-## Getting Started
+Frontend Next.js del sistema Kadosh POS.
 
-First, run the development server:
+## Desarrollo
 
-```bash
+```powershell
+Set-Location "C:\Users\JAIME Y BRISSA\kadosh-pos\apps\web"
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+URL:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```text
+http://localhost:3000
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Variables
 
-## Learn More
+Crear `apps/web/.env.local`:
 
-To learn more about Next.js, take a look at the following resources:
+```env
+NEXT_PUBLIC_APP_NAME=Kadosh POS
+NEXT_PUBLIC_API_URL=http://127.0.0.1:8010/api/v1
+NEXT_PUBLIC_SCANNER_WEB_URL=http://TU_IP_WIFI:3000
+NEXT_PUBLIC_SCANNER_API_URL=http://TU_IP_WIFI:8010/api/v1
+NEXT_PUBLIC_CUSTOMER_DISPLAY_DEVICE_ID=tablet-caja-01
+NEXT_PUBLIC_CUSTOMER_DISPLAY_DEVICE_SECRET=
+NEXT_PUBLIC_CULQI_PUBLIC_KEY=pk_test_TU_LLAVE_PUBLICA
+NEXT_PUBLIC_CULQI_RSA_ID=
+NEXT_PUBLIC_CULQI_RSA_PUBLIC_KEY=
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Backend requerido
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```powershell
+Set-Location "C:\Users\JAIME Y BRISSA\kadosh-pos\apps\api"
+.\.venv\Scripts\Activate.ps1
+uvicorn app.main:app --host 127.0.0.1 --port 8010
+```
 
-## Deploy on Vercel
+Para usar scanner móvil desde celular, levantar API y web escuchando en la red local:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```powershell
+Set-Location "C:\Users\JAIME Y BRISSA\kadosh-pos\apps\api"
+.\.venv\Scripts\Activate.ps1
+uvicorn app.main:app --host 0.0.0.0 --port 8010
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```powershell
+Set-Location "C:\Users\JAIME Y BRISSA\kadosh-pos\apps\web"
+npm run dev -- --hostname 0.0.0.0
+```
+
+En la red actual, abrir:
+
+```text
+http://192.168.18.232:3000/pos
+```
+
+## Rutas principales
+
+| Ruta | Uso |
+| --- | --- |
+| `/login` | Inicio de sesión |
+| `/dashboard` | Indicadores operativos |
+| `/products` | Productos base |
+| `/product-variants` | Variantes, SKU, barcode y etiquetas |
+| `/inventory` | Movimientos de stock |
+| `/customers` | Directorio de clientes |
+| `/pos` | Caja/POS |
+| `/payments` | Historial de pagos y reimpresión |
+| `/customer-display` | Pantalla para tablet cliente |
+| `/scanner` | Scanner móvil vinculado al POS |
+| `/reports` | Reportes operativos |
+
+## Validación
+
+```powershell
+Set-Location "C:\Users\JAIME Y BRISSA\kadosh-pos\apps\web"
+npm run lint
+npx tsc --noEmit
+```
+
+## Notas
+
+- Los pagos manuales usan `/payments/manual`.
+- El POS imprime comprobantes con una vista exclusiva para impresión.
+- Las variantes generan códigos internos automáticamente si no se ingresa barcode.
+- `/product-variants` permite exportar códigos a CSV e imprimir etiquetas Code 128 una por una o en bloque.
+- Para scanner móvil con cámara puede hacer falta abrir la web desde la IP local de la PC y usar HTTPS si el navegador lo exige.

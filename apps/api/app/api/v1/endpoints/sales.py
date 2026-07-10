@@ -57,3 +57,12 @@ def mark_sale_as_paid(
     service = SaleService(db)
 
     return service.mark_sale_as_paid(sale_id, current_user)
+
+
+@router.patch("/{sale_id}/cancel", response_model=SaleResponse)
+def cancel_sale(
+    sale_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("ADMIN", "SELLER", "CASHIER")),
+) -> SaleResponse:
+    return SaleService(db).cancel_sale(sale_id, current_user)

@@ -23,6 +23,7 @@ class InventoryMovementCreate(BaseModel):
     )
 
 
+
 class InventoryMovementResponse(BaseModel):
     """Respuesta pública de un movimiento de inventario."""
 

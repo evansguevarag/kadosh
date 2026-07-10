@@ -16,7 +16,7 @@ router = APIRouter(prefix="/products", tags=["Products"])
 def list_products(db: Session = Depends(get_db)) -> list[ProductResponse]:
     service = ProductService(db)
 
-    return service.list_active_products()
+    return service.list_products()
 
 
 @router.get("/{product_id}", response_model=ProductResponse)

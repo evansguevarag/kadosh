@@ -118,3 +118,10 @@ class ProductVariantResponse(ProductVariantBase):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class ProductVariantBarcodeBackfillResponse(BaseModel):
+    """Resultado de la generación masiva de códigos internos."""
+
+    updated_count: int
+    variants: list[ProductVariantResponse]

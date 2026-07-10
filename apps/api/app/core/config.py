@@ -20,6 +20,10 @@ class Settings(BaseSettings):
 
     culqi_public_key: str = Field(alias="CULQI_PUBLIC_KEY")
     culqi_secret_key: str = Field(alias="CULQI_SECRET_KEY")
+    culqi_default_phone_number: str = Field(
+        default="924454127",
+        alias="CULQI_DEFAULT_PHONE_NUMBER",
+    )
 
     apiperu_base_url: str = "https://apiperu.dev/api"
     apiperu_token: str = Field(default="", alias="APIPERU_TOKEN")

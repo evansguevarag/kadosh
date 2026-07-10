@@ -77,6 +77,20 @@ class SaleItemResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class SaleCustomerResponse(BaseModel):
+    """Datos del cliente asociado a la venta."""
+
+    id: UUID
+    document_type: str | None
+    document_number: str | None
+    first_name: str
+    last_name: str | None
+    phone: str | None
+    email: str | None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class SaleResponse(BaseModel):
     """Respuesta pública de una venta."""
 
@@ -95,5 +109,6 @@ class SaleResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     items: list[SaleItemResponse] = []
+    customer: SaleCustomerResponse | None = None
 
     model_config = ConfigDict(from_attributes=True)

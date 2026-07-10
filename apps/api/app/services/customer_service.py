@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.models.customer import Customer
 from app.repositories.customer_repository import CustomerRepository
 from app.schemas.customer import CustomerCreate, CustomerUpdate
+from app.services.document_lookup_service import DocumentLookupService
 
 
 ALLOWED_DOCUMENT_TYPES = {"DNI", "RUC", "CE", "PASAPORTE"}
@@ -34,6 +35,62 @@ class CustomerService:
             )
 
         return customer
+
+    def get_customer_by_document(
+        self,
+        document_type: str,
+        document_number: str,
+    ) -> Customer:
+        """Obtiene un cliente activo por documento."""
+
+        normalized_document_type = document_type.strip().upper()
+        normalized_document_number = document_number.strip()
+
+        customer = self.customer_repository.find_by_document(
+            document_type=normalized_document_type,
+            document_number=normalized_document_number,
+        )
+
+        if customer is None or not customer.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Cliente no encontrado.",
+            )
+
+        return customer
+
+    def resolve_dni_customer(self, dni: str) -> tuple[Customer, str]:
+        """Busca el cliente por DNI localmente y solo consulta API si no existe."""
+
+        normalized_dni = dni.strip()
+
+        self._validate_document("DNI", normalized_dni)
+
+        existing_customer = self.customer_repository.find_by_document(
+            document_type="DNI",
+            document_number=normalized_dni,
+        )
+
+        if existing_customer is not None and existing_customer.is_active:
+            return existing_customer, "LOCAL_DB"
+
+        dni_data = DocumentLookupService().lookup_dni(normalized_dni)
+
+        created_customer = self.create_customer(
+            CustomerCreate(
+                document_type="DNI",
+                document_number=normalized_dni,
+                first_name=dni_data.first_name,
+                last_name=(
+                    f"{dni_data.paternal_surname} {dni_data.maternal_surname}"
+                ).strip()
+                or "SIN APELLIDOS",
+                phone=None,
+                email=None,
+            )
+        )
+
+        return created_customer, "APIPERU_CREATED"
 
     def create_customer(self, payload: CustomerCreate) -> Customer:
         """Crea un cliente validando documento duplicado."""

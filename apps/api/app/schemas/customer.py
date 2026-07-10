@@ -89,3 +89,10 @@ class CustomerResponse(CustomerBase):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class CustomerResolveDniResponse(BaseModel):
+    """Cliente resuelto desde la base local o consultando DNI externamente."""
+
+    customer: CustomerResponse
+    source: str

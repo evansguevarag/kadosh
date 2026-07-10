@@ -24,6 +24,11 @@ class ProductService:
 
         return self.product_repository.find_all_active()
 
+    def list_products(self) -> list[Product]:
+        """Lista todos los productos para gestión administrativa."""
+
+        return self.product_repository.find_all()
+
     def get_product_by_id(self, product_id: UUID) -> Product:
         """Obtiene un producto por ID."""
 

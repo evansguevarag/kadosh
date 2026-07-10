@@ -131,6 +131,9 @@ class PaymentSessionService:
             customer_message=payload.customer_message.strip()
             if payload.customer_message
             else None,
+            receipt_email=str(payload.receipt_email).strip().lower()
+            if payload.receipt_email
+            else None,
             expires_at=datetime.now(timezone.utc)
             + timedelta(minutes=payload.expires_in_minutes),
             viewed_at=None,
@@ -153,6 +156,7 @@ class PaymentSessionService:
                     "status": created_session.status,
                     "amount": str(created_session.amount),
                     "currency": created_session.currency,
+                    "receipt_email": created_session.receipt_email,
                     "expires_at": created_session.expires_at.isoformat(),
                 },
             )
