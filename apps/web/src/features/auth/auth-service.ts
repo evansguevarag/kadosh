@@ -1,5 +1,13 @@
 import { apiClient } from "@/services/api-client";
-import type { AuthUser, LoginRequest, TokenResponse } from "@/types/api";
+import type {
+  AuthUser,
+  LoginRequest,
+  PasswordResetConfirmRequest,
+  PasswordResetRequest,
+  PasswordResetResponse,
+  PasswordResetVerifyRequest,
+  TokenResponse,
+} from "@/types/api";
 
 const ACCESS_TOKEN_STORAGE_KEY = "kadosh_access_token";
 const REFRESH_TOKEN_STORAGE_KEY = "kadosh_refresh_token";
@@ -46,6 +54,33 @@ export const authService = {
       ...response,
       user: currentUser,
     };
+  },
+
+  requestPasswordReset(
+    payload: PasswordResetRequest,
+  ): Promise<PasswordResetResponse> {
+    return apiClient.post<PasswordResetResponse, PasswordResetRequest>(
+      "/auth/password-reset/request",
+      payload,
+    );
+  },
+
+  verifyPasswordResetOtp(
+    payload: PasswordResetVerifyRequest,
+  ): Promise<PasswordResetResponse> {
+    return apiClient.post<PasswordResetResponse, PasswordResetVerifyRequest>(
+      "/auth/password-reset/verify",
+      payload,
+    );
+  },
+
+  confirmPasswordReset(
+    payload: PasswordResetConfirmRequest,
+  ): Promise<PasswordResetResponse> {
+    return apiClient.post<PasswordResetResponse, PasswordResetConfirmRequest>(
+      "/auth/password-reset/confirm",
+      payload,
+    );
   },
 
   getCurrentUser(token?: string | null): Promise<AuthUser> {

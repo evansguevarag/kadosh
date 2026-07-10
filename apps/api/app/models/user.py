@@ -84,3 +84,9 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, ActiveStatusMixin, Base):
         "AuditLog",
         back_populates="user",
     )
+
+    password_reset_otps = relationship(
+        "PasswordResetOtp",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )

@@ -1,11 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, RefreshCcw, Search, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/layout/app-shell";
+import { EmptyState, LoadingState } from "@/components/ui/async-state";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -35,9 +42,10 @@ export default function CustomersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const deferredSearchTerm = useDeferredValue(searchTerm);
 
   const filteredCustomers = useMemo(() => {
-    const normalizedSearch = searchTerm.trim().toLowerCase();
+    const normalizedSearch = deferredSearchTerm.trim().toLowerCase();
 
     if (!normalizedSearch) {
       return customers;
@@ -57,7 +65,7 @@ export default function CustomersPage() {
 
       return searchableText.includes(normalizedSearch);
     });
-  }, [customers, searchTerm]);
+  }, [customers, deferredSearchTerm]);
 
   const loadCustomers = useCallback(
     async (manual = false) => {
@@ -153,20 +161,24 @@ export default function CustomersPage() {
 
         <CardContent>
           {isLoading ? (
-            <div className="flex items-center gap-2 text-sm text-slate-500">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Cargando clientes...
-            </div>
+            <LoadingState label="Cargando clientes..." />
           ) : filteredCustomers.length === 0 ? (
-            <p className="text-sm text-slate-500">
-              {customers.length === 0
-                ? "Todavía no hay clientes registrados. Se crearán desde el POS cuando busques un DNI."
-                : "No hay clientes que coincidan con el filtro."}
-            </p>
+            <EmptyState
+              title={
+                customers.length === 0
+                  ? "Todavía no hay clientes registrados."
+                  : "No hay clientes que coincidan con el filtro."
+              }
+              description={
+                customers.length === 0
+                  ? "Se crearán desde Caja cuando busques un DNI durante la venta."
+                  : "Prueba con DNI, nombre, teléfono o correo."
+              }
+            />
           ) : (
-            <div className="overflow-hidden rounded-xl border">
+            <div className="max-h-[560px] overflow-auto rounded-xl border">
               <Table>
-                <TableHeader>
+                <TableHeader className="sticky top-0 z-10 bg-white">
                   <TableRow>
                     <TableHead>Documento</TableHead>
                     <TableHead>Cliente</TableHead>

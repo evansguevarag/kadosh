@@ -23,6 +23,7 @@ import {
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/layout/app-shell";
+import { EmptyState, LoadingState } from "@/components/ui/async-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -123,6 +124,7 @@ export default function InventoryPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFindingVariant, setIsFindingVariant] = useState(false);
   const variantCodeInputRef = useRef<HTMLInputElement | null>(null);
+  const hasLoadedDataRef = useRef(false);
 
   const selectedVariant = useMemo(
     () => variants.find((variant) => variant.id === productVariantId) ?? null,
@@ -184,7 +186,9 @@ export default function InventoryPage() {
     }
 
     try {
-      setIsLoading(true);
+      if (!hasLoadedDataRef.current) {
+        setIsLoading(true);
+      }
 
       const [variantsResponse, movementsResponse] = await Promise.all([
         inventoryService.listVariants(token),
@@ -206,6 +210,7 @@ export default function InventoryPage() {
 
       toast.error(message);
     } finally {
+      hasLoadedDataRef.current = true;
       setIsLoading(false);
     }
   }, [token]);
@@ -384,18 +389,13 @@ export default function InventoryPage() {
 
             <CardContent>
               {isLoading ? (
-                <div className="flex items-center gap-2 text-sm text-slate-500">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Cargando stock...
-                </div>
+                <LoadingState label="Cargando stock..." rows={5} />
               ) : variants.length === 0 ? (
-                <p className="text-sm text-slate-500">
-                  Todavía no hay presentaciones activas.
-                </p>
+                <EmptyState title="Todavía no hay presentaciones activas." />
               ) : (
-                <div className="overflow-hidden rounded-xl border">
+                <div className="max-h-[560px] overflow-auto rounded-xl border">
                   <Table>
-                    <TableHeader>
+                    <TableHeader className="sticky top-0 z-10 bg-white">
                       <TableRow>
                         <TableHead>SKU</TableHead>
                         <TableHead>Código</TableHead>
@@ -699,18 +699,13 @@ export default function InventoryPage() {
 
           <CardContent>
             {isLoading ? (
-              <div className="flex items-center gap-2 text-sm text-slate-500">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Cargando movimientos...
-              </div>
+              <LoadingState label="Cargando movimientos..." rows={5} />
             ) : filteredMovements.length === 0 ? (
-              <p className="text-sm text-slate-500">
-                Todavía no hay movimientos registrados.
-              </p>
+              <EmptyState title="Todavía no hay movimientos registrados." />
             ) : (
-              <div className="overflow-hidden rounded-xl border">
+              <div className="max-h-[560px] overflow-auto rounded-xl border">
                 <Table>
-                  <TableHeader>
+                  <TableHeader className="sticky top-0 z-10 bg-white">
                     <TableRow>
                       <TableHead>Fecha</TableHead>
                       <TableHead>SKU</TableHead>

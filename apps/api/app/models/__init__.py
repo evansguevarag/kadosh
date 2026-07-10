@@ -3,6 +3,7 @@ from app.models.category import Category
 from app.models.customer import Customer
 from app.models.inventory_movement import InventoryMovement
 from app.models.payment import Payment
+from app.models.password_reset_otp import PasswordResetOtp
 from app.models.payment_session import PaymentSession
 from app.models.product import Product
 from app.models.product_variant import ProductVariant
@@ -18,6 +19,7 @@ __all__ = [
     "Customer",
     "InventoryMovement",
     "Payment",
+    "PasswordResetOtp",
     "PaymentSession",
     "Product",
     "ProductVariant",

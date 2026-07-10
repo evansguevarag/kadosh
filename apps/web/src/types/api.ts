@@ -23,6 +23,24 @@ export type TokenResponse = {
   user: AuthUser;
 };
 
+export type PasswordResetRequest = {
+  email: string;
+};
+
+export type PasswordResetVerifyRequest = {
+  email: string;
+  otp_code: string;
+};
+
+export type PasswordResetConfirmRequest = PasswordResetVerifyRequest & {
+  new_password: string;
+};
+
+export type PasswordResetResponse = {
+  message: string;
+  email_delivery_configured: boolean;
+};
+
 export type Category = {
   id: string;
   name: string;

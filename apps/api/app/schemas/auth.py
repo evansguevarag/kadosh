@@ -35,6 +35,45 @@ class TokenResponse(BaseModel):
     user: AuthUserResponse
 
 
+class PasswordResetRequest(BaseModel):
+    """Solicitud para enviar un OTP de restablecimiento."""
+
+    email: EmailStr = Field(
+        examples=["admin@kadosh.com"],
+    )
+
+
+class PasswordResetResponse(BaseModel):
+    """Respuesta generica para no revelar si el correo existe."""
+
+    message: str
+    email_delivery_configured: bool = True
+
+
+class PasswordResetVerifyRequest(BaseModel):
+    """Datos para validar un OTP antes de cambiar contrasena."""
+
+    email: EmailStr = Field(
+        examples=["admin@kadosh.com"],
+    )
+    otp_code: str = Field(
+        min_length=6,
+        max_length=6,
+        pattern=r"^\d{6}$",
+        examples=["123456"],
+    )
+
+
+class PasswordResetConfirmRequest(PasswordResetVerifyRequest):
+    """Datos para confirmar el cambio de contrasena."""
+
+    new_password: str = Field(
+        min_length=8,
+        max_length=72,
+        examples=["NuevaClave123"],
+    )
+
+
 class BootstrapAdminRequest(BaseModel):
     """Datos para crear el primer administrador del sistema."""
 

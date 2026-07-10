@@ -48,6 +48,12 @@ CULQI_PUBLIC_KEY=pk_test_...
 CULQI_SECRET_KEY=sk_test_...
 CULQI_DEFAULT_PHONE_NUMBER=924454127
 APIPERU_TOKEN=...
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=tu-correo@gmail.com
+SMTP_PASSWORD=tu-app-password-de-google
+SMTP_FROM_EMAIL=tu-correo@gmail.com
+SMTP_USE_TLS=true
 ```
 
 Frontend `apps/web/.env.local`:

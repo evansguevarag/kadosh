@@ -9,6 +9,10 @@ from app.schemas.auth import (
     BootstrapAdminRequest,
     BootstrapAdminResponse,
     LoginRequest,
+    PasswordResetConfirmRequest,
+    PasswordResetRequest,
+    PasswordResetResponse,
+    PasswordResetVerifyRequest,
     TokenResponse,
 )
 from app.services.auth_service import AuthService
@@ -38,6 +42,36 @@ def login(
     service = AuthService(db)
 
     return service.login(payload)
+
+
+@router.post("/password-reset/request", response_model=PasswordResetResponse)
+def request_password_reset(
+    payload: PasswordResetRequest,
+    db: Session = Depends(get_db),
+) -> PasswordResetResponse:
+    service = AuthService(db)
+
+    return service.request_password_reset(payload)
+
+
+@router.post("/password-reset/verify", response_model=PasswordResetResponse)
+def verify_password_reset_otp(
+    payload: PasswordResetVerifyRequest,
+    db: Session = Depends(get_db),
+) -> PasswordResetResponse:
+    service = AuthService(db)
+
+    return service.verify_password_reset_otp(payload)
+
+
+@router.post("/password-reset/confirm", response_model=PasswordResetResponse)
+def confirm_password_reset(
+    payload: PasswordResetConfirmRequest,
+    db: Session = Depends(get_db),
+) -> PasswordResetResponse:
+    service = AuthService(db)
+
+    return service.confirm_password_reset(payload)
 
 
 @router.get("/me", response_model=AuthUserResponse)

@@ -1,15 +1,22 @@
-from datetime import UTC, datetime
+import hashlib
+import secrets
+from datetime import UTC, datetime, timedelta
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.security import (
     create_access_token,
     create_refresh_token,
     hash_password,
     verify_password,
 )
+from app.models.password_reset_otp import PasswordResetOtp
 from app.models.user import User
+from app.repositories.password_reset_otp_repository import (
+    PasswordResetOtpRepository,
+)
 from app.repositories.role_repository import RoleRepository
 from app.repositories.user_repository import UserRepository
 from app.schemas.auth import (
@@ -17,7 +24,17 @@ from app.schemas.auth import (
     BootstrapAdminRequest,
     BootstrapAdminResponse,
     LoginRequest,
+    PasswordResetConfirmRequest,
+    PasswordResetRequest,
+    PasswordResetResponse,
+    PasswordResetVerifyRequest,
     TokenResponse,
+)
+from app.services.email_service import EmailService
+
+
+PASSWORD_RESET_MESSAGE = (
+    "Si el correo existe y está activo, enviaremos un código para restablecer la contraseña."
 )
 
 
@@ -28,6 +45,8 @@ class AuthService:
         self.db = db
         self.user_repository = UserRepository(db)
         self.role_repository = RoleRepository(db)
+        self.password_reset_otp_repository = PasswordResetOtpRepository(db)
+        self.email_service = EmailService()
 
     def bootstrap_admin(
         self,
@@ -124,6 +143,64 @@ class AuthService:
             user=self._build_auth_user_response(user),
         )
 
+    def request_password_reset(
+        self,
+        payload: PasswordResetRequest,
+    ) -> PasswordResetResponse:
+        normalized_email = payload.email.lower().strip()
+        user = self.user_repository.find_by_email(normalized_email)
+
+        if user is None or not user.is_active or user.status != "ACTIVE":
+            return PasswordResetResponse(message=PASSWORD_RESET_MESSAGE)
+
+        otp_code = f"{secrets.randbelow(1_000_000):06d}"
+        now = datetime.now(UTC)
+
+        self.password_reset_otp_repository.consume_active_for_user(user.id, now)
+        self.password_reset_otp_repository.create(
+            PasswordResetOtp(
+                user_id=user.id,
+                code_hash=self._hash_otp(otp_code),
+                expires_at=now + timedelta(minutes=10),
+            ),
+        )
+
+        email_delivery_configured = self.email_service.send_password_reset_otp(
+            recipient_email=user.email,
+            otp_code=otp_code,
+        )
+
+        return PasswordResetResponse(
+            message=PASSWORD_RESET_MESSAGE,
+            email_delivery_configured=email_delivery_configured,
+        )
+
+    def verify_password_reset_otp(
+        self,
+        payload: PasswordResetVerifyRequest,
+    ) -> PasswordResetResponse:
+        user = self._get_active_user_for_password_reset(payload.email)
+        self._get_valid_password_reset_otp(user, payload.otp_code)
+
+        return PasswordResetResponse(message="Código verificado correctamente.")
+
+    def confirm_password_reset(
+        self,
+        payload: PasswordResetConfirmRequest,
+    ) -> PasswordResetResponse:
+        user = self._get_active_user_for_password_reset(payload.email)
+        otp = self._get_valid_password_reset_otp(user, payload.otp_code)
+        now = datetime.now(UTC)
+
+        user.password_hash = hash_password(payload.new_password)
+        self.user_repository.update(user)
+        self.password_reset_otp_repository.consume(otp, now)
+        self.password_reset_otp_repository.consume_active_for_user(user.id, now)
+
+        return PasswordResetResponse(
+            message="Contraseña actualizada correctamente. Ya puedes iniciar sesión.",
+        )
+
     def _build_auth_user_response(self, user: User) -> AuthUserResponse:
         role_name = user.role.name if user.role else "UNKNOWN"
 
@@ -135,3 +212,39 @@ class AuthService:
             role=role_name,
             status=user.status,
         )
+
+    def _get_active_user_for_password_reset(self, email: str) -> User:
+        normalized_email = email.lower().strip()
+        user = self.user_repository.find_by_email(normalized_email)
+
+        if user is None or not user.is_active or user.status != "ACTIVE":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Código inválido o expirado.",
+            )
+
+        return user
+
+    def _get_valid_password_reset_otp(
+        self,
+        user: User,
+        otp_code: str,
+    ) -> PasswordResetOtp:
+        now = datetime.now(UTC)
+        otp = self.password_reset_otp_repository.find_latest_active_by_user(
+            user.id,
+            now,
+        )
+
+        if otp is None or otp.code_hash != self._hash_otp(otp_code):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Código inválido o expirado.",
+            )
+
+        return otp
+
+    def _hash_otp(self, otp_code: str) -> str:
+        return hashlib.sha256(
+            f"{settings.jwt_secret_key}:{otp_code}".encode("utf-8"),
+        ).hexdigest()

@@ -17,22 +17,19 @@ import {
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/layout/app-shell";
+import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { useAuth } from "@/features/auth/use-auth";
 import { paymentService } from "@/features/payments/payment-service";
 import type { CustomerDisplayDevice } from "@/features/payments/customer-display-device-service";
 import { reportService } from "@/features/reports/report-service";
 import { saleService } from "@/features/sales/sale-service";
-import { formatPaymentMethod, formatSaleStatus } from "@/lib/status-format";
+import {
+  formatPaymentMethod,
+  formatSaleStatus,
+  statusBadgeVariant,
+} from "@/lib/status-format";
 import { cn } from "@/lib/utils";
 import { ApiClientError } from "@/services/api-client";
 import type { Payment, ReportsDashboard, Sale } from "@/types/api";
@@ -65,6 +62,14 @@ function formatCustomerName(sale: Sale) {
   }
 
   return `${sale.customer.first_name} ${sale.customer.last_name || ""}`.trim();
+}
+
+function formatShortSaleNumber(saleNumber: string) {
+  if (saleNumber.length <= 18) {
+    return saleNumber;
+  }
+
+  return `${saleNumber.slice(0, 10)}...${saleNumber.slice(-4)}`;
 }
 
 export default function DashboardPage() {
@@ -269,7 +274,7 @@ export default function DashboardPage() {
             </Card>
           </div>
 
-          <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+          <div className="grid items-start gap-6 xl:grid-cols-[1.1fr_0.9fr]">
             <Card>
               <CardHeader className="gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <CardTitle className="flex items-center gap-2">
@@ -290,31 +295,40 @@ export default function DashboardPage() {
                     Todavía no hay ventas registradas.
                   </p>
                 ) : (
-                  <div className="overflow-hidden rounded-xl border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Venta</TableHead>
-                          <TableHead>Cliente</TableHead>
-                          <TableHead>Total</TableHead>
-                          <TableHead>Estado</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {sales.slice(0, 8).map((sale) => (
-                          <TableRow key={sale.id}>
-                            <TableCell className="font-medium">
-                              {sale.sale_number}
-                            </TableCell>
-                            <TableCell>
+                  <div className="space-y-2">
+                    {sales.slice(0, 8).map((sale) => (
+                      <Link
+                        key={sale.id}
+                        className="block rounded-xl border bg-white p-3 transition hover:bg-slate-50"
+                        href={`/sales/${sale.id}`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p
+                              className="truncate font-semibold text-slate-950"
+                              title={sale.sale_number}
+                            >
+                              {formatShortSaleNumber(sale.sale_number)}
+                            </p>
+                            <p className="mt-1 truncate text-sm text-slate-600">
                               {formatCustomerName(sale)}
-                            </TableCell>
-                            <TableCell>{formatMoney(sale.total)}</TableCell>
-                            <TableCell>{formatSaleStatus(sale.status)}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                            </p>
+                          </div>
+
+                          <div className="shrink-0 text-right">
+                            <p className="font-semibold">
+                              {formatMoney(sale.total)}
+                            </p>
+                            <Badge
+                              className="mt-1"
+                              variant={statusBadgeVariant(sale.status)}
+                            >
+                              {formatSaleStatus(sale.status)}
+                            </Badge>
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
                   </div>
                 )}
               </CardContent>

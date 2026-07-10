@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -13,6 +19,7 @@ import {
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/layout/app-shell";
+import { EmptyState, LoadingState } from "@/components/ui/async-state";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -75,9 +82,11 @@ export default function SalesPage() {
   const [statusFilter, setStatusFilter] =
     useState<(typeof saleStatusFilters)[number]["value"]>("ALL");
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const deferredSearchTerm = useDeferredValue(searchTerm);
 
   const filteredSales = useMemo(() => {
-    const normalizedSearch = searchTerm.trim().toLowerCase();
+    const normalizedSearch = deferredSearchTerm.trim().toLowerCase();
 
     return sales.filter((sale) => {
       const matchesStatus =
@@ -101,7 +110,7 @@ export default function SalesPage() {
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(normalizedSearch));
     });
-  }, [sales, searchTerm, statusFilter]);
+  }, [sales, deferredSearchTerm, statusFilter]);
 
   const loadSales = useCallback(
     async (showToast = false) => {
@@ -110,7 +119,12 @@ export default function SalesPage() {
       }
 
       try {
-        setIsLoading(true);
+        if (showToast) {
+          setIsRefreshing(true);
+        } else {
+          setIsLoading(true);
+        }
+
         const response = await saleService.listSales(token);
         setSales(response);
 
@@ -126,6 +140,7 @@ export default function SalesPage() {
         toast.error(message);
       } finally {
         setIsLoading(false);
+        setIsRefreshing(false);
       }
     },
     [token],
@@ -157,10 +172,10 @@ export default function SalesPage() {
           <Button
             type="button"
             variant="outline"
-            disabled={isLoading}
+            disabled={isLoading || isRefreshing}
             onClick={() => void loadSales(true)}
           >
-            {isLoading ? (
+            {isLoading || isRefreshing ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <RefreshCw className="h-4 w-4" />
@@ -207,18 +222,16 @@ export default function SalesPage() {
 
           <CardContent>
             {isLoading ? (
-              <div className="flex items-center gap-2 text-sm text-slate-500">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Cargando ventas...
-              </div>
+              <LoadingState label="Cargando ventas..." rows={5} />
             ) : filteredSales.length === 0 ? (
-              <p className="rounded-xl border border-dashed p-4 text-sm text-slate-500">
-                No hay ventas para los filtros seleccionados.
-              </p>
+              <EmptyState
+                title="No hay ventas para los filtros seleccionados."
+                description="Cambia el estado o busca por número de venta, cliente o DNI."
+              />
             ) : (
               <div className="max-h-[560px] overflow-auto rounded-xl border">
                 <Table>
-                  <TableHeader>
+                  <TableHeader className="sticky top-0 z-10 bg-white">
                     <TableRow>
                       <TableHead>Fecha</TableHead>
                       <TableHead>Venta</TableHead>
