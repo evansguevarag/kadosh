@@ -144,7 +144,7 @@ export default function LoginPage() {
                         ? "Ocultar contraseña"
                         : "Mostrar contraseña"
                     }
-                    className="absolute right-1 top-1 h-8 w-8"
+                    className="absolute inset-y-0 right-0.5 my-auto"
                     size="icon-sm"
                     type="button"
                     variant="ghost"
