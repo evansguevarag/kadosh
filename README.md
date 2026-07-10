@@ -2,6 +2,10 @@
 
 Sistema de punto de venta para tienda urbana Kadosh: productos, variantes, inventario, clientes, POS, pagos, pantalla de cliente, scanner móvil y reportes.
 
+## Sitio web
+
+[Abrir Kadosh](https://kadosh-pos-web.vercel.app/)
+
 ## Stack
 
 - Frontend: Next.js, TypeScript, Tailwind CSS
