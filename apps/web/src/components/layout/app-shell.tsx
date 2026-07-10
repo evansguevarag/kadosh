@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   Loader2,
   LogOut,
+  Menu,
   MonitorSmartphone,
   Package,
   PackageSearch,
@@ -118,6 +119,7 @@ export function AppShell({ title, description, children }: AppShellProps) {
   const { user, logout, status } = useAuth();
 
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const authUser = user as AuthUserWithProfile | null;
 
@@ -135,6 +137,11 @@ export function AppShell({ title, description, children }: AppShellProps) {
     logout();
     setIsLogoutDialogOpen(false);
     router.push("/login");
+  }
+
+  function requestLogout() {
+    setIsMobileMenuOpen(false);
+    setIsLogoutDialogOpen(true);
   }
 
   if (status === "loading") {
@@ -198,13 +205,72 @@ export function AppShell({ title, description, children }: AppShellProps) {
             variant="outline"
             size="sm"
             type="button"
-            onClick={() => setIsLogoutDialogOpen(true)}
+            onClick={requestLogout}
           >
             <LogOut className="h-3.5 w-3.5" />
             Cerrar sesión
           </Button>
         </div>
       </aside>
+
+      <Dialog open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+        <DialogContent
+          className="left-0 top-0 h-dvh w-[min(88vw,20rem)] max-w-none -translate-x-0 -translate-y-0 content-start gap-0 rounded-none p-0 lg:hidden"
+          showCloseButton
+        >
+          <DialogTitle className="sr-only">Navegación principal</DialogTitle>
+          <div className="flex h-full min-h-0 flex-col bg-white">
+            <div className="flex items-center gap-3 border-b px-4 py-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-950 text-white">
+                <ShoppingBag className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="font-bold leading-none">Kadosh</p>
+                <p className="mt-1 text-xs text-slate-500">Tienda urbana</p>
+              </div>
+            </div>
+
+            <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-4">
+              {navigationItems.map((item) => {
+                const Icon = item.icon;
+                const isActive =
+                  pathname === item.href || pathname.startsWith(`${item.href}/`);
+
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${
+                      isActive
+                        ? "bg-slate-950 text-white"
+                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+                    }`}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </nav>
+
+            <div className="border-t bg-slate-50 p-4">
+              <p className="truncate text-sm font-bold">{displayName}</p>
+              <p className="mt-0.5 text-xs text-slate-500">{displayRole}</p>
+              <Button
+                className="mt-3 w-full"
+                variant="outline"
+                size="sm"
+                type="button"
+                onClick={requestLogout}
+              >
+                <LogOut className="h-4 w-4" />
+                Cerrar sesión
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isLogoutDialogOpen} onOpenChange={setIsLogoutDialogOpen}>
         <DialogContent>
@@ -232,14 +298,32 @@ export function AppShell({ title, description, children }: AppShellProps) {
       </Dialog>
 
       <div className="lg:pl-60">
-        <header className="sticky top-0 z-20 border-b bg-white/90 px-5 py-4 backdrop-blur lg:px-8">
-          <div className="flex flex-col gap-1">
-            <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
-            <p className="text-sm text-slate-500">{description}</p>
+        <header className="sticky top-0 z-20 border-b bg-white/95 px-3 py-3 backdrop-blur sm:px-5 sm:py-4 lg:px-8">
+          <div className="flex min-w-0 items-start gap-3">
+            <Button
+              aria-label="Abrir menú principal"
+              className="mt-0.5 lg:hidden"
+              size="icon"
+              type="button"
+              variant="outline"
+              onClick={() => setIsMobileMenuOpen(true)}
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+            <div className="min-w-0 flex-1">
+              <h1 className="text-lg font-bold tracking-tight sm:text-2xl">
+                {title}
+              </h1>
+              <p className="mt-0.5 text-xs leading-5 text-slate-500 sm:text-sm">
+                {description}
+              </p>
+            </div>
           </div>
         </header>
 
-        <main className="px-5 py-6 lg:px-8">{children}</main>
+        <main className="min-w-0 px-3 py-4 sm:px-5 sm:py-6 lg:px-8">
+          {children}
+        </main>
       </div>
     </div>
   );

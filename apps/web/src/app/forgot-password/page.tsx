@@ -98,7 +98,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <main className="min-h-screen bg-white px-6 py-10 text-slate-950">
+    <main className="min-h-screen bg-white px-3 pb-6 pt-20 text-slate-950 sm:px-6 sm:py-10">
       <Link
         className={cn(
           buttonVariants({ variant: "ghost" }),
@@ -110,8 +110,8 @@ export default function ForgotPasswordPage() {
         Volver al login
       </Link>
 
-      <div className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-md flex-col justify-center">
-        <Card className="border-slate-200 bg-white shadow-2xl shadow-slate-200/70">
+      <div className="mx-auto flex min-h-[calc(100vh-5rem)] min-w-0 max-w-md flex-col justify-center">
+        <Card className="min-w-0 border-slate-200 bg-white shadow-xl shadow-slate-200/70 sm:shadow-2xl">
           <CardHeader className="space-y-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-950 text-white">
               <LockKeyhole className="h-6 w-6" />
@@ -136,7 +136,14 @@ export default function ForgotPasswordPage() {
                       : "bg-slate-50 text-slate-500"
                   }`}
                 >
-                  {stepLabels[step]}
+                  <span className="sm:hidden">
+                    {step === "email"
+                      ? "Enviar"
+                      : step === "otp"
+                        ? "Validar"
+                        : "Cambiar"}
+                  </span>
+                  <span className="hidden sm:inline">{stepLabels[step]}</span>
                 </div>
               ))}
             </div>
