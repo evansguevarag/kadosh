@@ -1,8 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import {
+  createContext,
+  createElement,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+import { usePathname, useRouter } from "next/navigation";
 
 import { authService } from "@/features/auth/auth-service";
+import { AUTH_UNAUTHORIZED_EVENT } from "@/services/api-client";
 import type { AuthUser, LoginRequest } from "@/types/api";
 
 type AuthStatus = "loading" | "authenticated" | "unauthenticated";
@@ -25,6 +33,8 @@ const initialAuthState: AuthState = {
   status: "loading",
 };
 
+const AuthContext = createContext<UseAuthResult | null>(null);
+
 function getStoredAuthState(): AuthState {
   const storedToken = authService.getAccessToken();
   const storedUser = authService.getStoredUser();
@@ -44,18 +54,75 @@ function getStoredAuthState(): AuthState {
   };
 }
 
-export function useAuth(): UseAuthResult {
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const router = useRouter();
   const [authState, setAuthState] = useState<AuthState>(initialAuthState);
 
   useEffect(() => {
-    const timeoutId = window.setTimeout(() => {
-      setAuthState(getStoredAuthState());
-    }, 0);
+    let isActive = true;
+    const storedState = getStoredAuthState();
+
+    if (storedState.status === "unauthenticated" || !storedState.token) {
+      queueMicrotask(() => {
+        if (isActive) {
+          setAuthState(storedState);
+        }
+      });
+
+      return () => {
+        isActive = false;
+      };
+    }
+
+    authService
+      .getCurrentUser(storedState.token)
+      .then((user) => {
+        if (!isActive) return;
+
+        authService.saveUser(user);
+        setAuthState({
+          user,
+          token: storedState.token,
+          status: "authenticated",
+        });
+      })
+      .catch(() => {
+        if (!isActive) return;
+
+        authService.logout();
+        setAuthState({
+          user: null,
+          token: null,
+          status: "unauthenticated",
+        });
+      });
 
     return () => {
-      window.clearTimeout(timeoutId);
+      isActive = false;
     };
   }, []);
+
+  useEffect(() => {
+    function handleUnauthorized() {
+      authService.logout();
+      setAuthState({
+        user: null,
+        token: null,
+        status: "unauthenticated",
+      });
+
+      if (pathname !== "/login" && pathname !== "/forgot-password") {
+        router.replace("/login");
+      }
+    }
+
+    window.addEventListener(AUTH_UNAUTHORIZED_EVENT, handleUnauthorized);
+
+    return () => {
+      window.removeEventListener(AUTH_UNAUTHORIZED_EVENT, handleUnauthorized);
+    };
+  }, [pathname, router]);
 
   async function login(payload: LoginRequest): Promise<void> {
     const response = await authService.login(payload);
@@ -79,7 +146,7 @@ export function useAuth(): UseAuthResult {
     });
   }
 
-  return {
+  const value: UseAuthResult = {
     ...authState,
     isAuthenticated:
       authState.status === "loading" ||
@@ -87,4 +154,16 @@ export function useAuth(): UseAuthResult {
     login,
     logout,
   };
+
+  return createElement(AuthContext.Provider, { value }, children);
+}
+
+export function useAuth(): UseAuthResult {
+  const context = useContext(AuthContext);
+
+  if (!context) {
+    throw new Error("useAuth debe usarse dentro de AuthProvider.");
+  }
+
+  return context;
 }

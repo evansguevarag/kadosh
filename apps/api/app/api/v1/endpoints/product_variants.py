@@ -20,6 +20,7 @@ router = APIRouter(prefix="/product-variants", tags=["Product Variants"])
 @router.get("", response_model=list[ProductVariantResponse])
 def list_product_variants(
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("ADMIN", "SELLER", "CASHIER")),
 ) -> list[ProductVariantResponse]:
     service = ProductVariantService(db)
 
@@ -33,6 +34,7 @@ def list_product_variants(
 def list_variants_by_product(
     product_id: UUID,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("ADMIN", "SELLER", "CASHIER")),
 ) -> list[ProductVariantResponse]:
     service = ProductVariantService(db)
 
@@ -74,6 +76,7 @@ def generate_missing_variant_barcodes(
 def get_product_variant(
     variant_id: UUID,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("ADMIN", "SELLER", "CASHIER")),
 ) -> ProductVariantResponse:
     service = ProductVariantService(db)
 

@@ -13,7 +13,10 @@ router = APIRouter(prefix="/categories", tags=["Categories"])
 
 
 @router.get("", response_model=list[CategoryResponse])
-def list_categories(db: Session = Depends(get_db)) -> list[CategoryResponse]:
+def list_categories(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("ADMIN", "SELLER", "CASHIER")),
+) -> list[CategoryResponse]:
     service = CategoryService(db)
 
     return service.list_active_categories()
@@ -23,6 +26,7 @@ def list_categories(db: Session = Depends(get_db)) -> list[CategoryResponse]:
 def get_category(
     category_id: UUID,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("ADMIN", "SELLER", "CASHIER")),
 ) -> CategoryResponse:
     service = CategoryService(db)
 

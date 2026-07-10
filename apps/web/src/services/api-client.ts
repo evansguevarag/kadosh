@@ -1,5 +1,7 @@
 import { env } from "@/config/env";
 
+export const AUTH_UNAUTHORIZED_EVENT = "kadosh:auth-unauthorized";
+
 type ApiClientOptions = {
   token?: string | null;
   headers?: Record<string, string>;
@@ -104,6 +106,10 @@ async function request<TResponse, TBody = unknown>(
         status: response.status,
         payload,
       });
+
+      if (response.status === 401 && typeof window !== "undefined") {
+        window.dispatchEvent(new Event(AUTH_UNAUTHORIZED_EVENT));
+      }
 
       throw new ApiClientError(message, response.status, payload);
     }

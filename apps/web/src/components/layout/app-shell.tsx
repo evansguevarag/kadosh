@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -8,6 +8,7 @@ import {
   Boxes,
   CreditCard,
   LayoutDashboard,
+  Loader2,
   LogOut,
   MonitorSmartphone,
   Package,
@@ -114,7 +115,7 @@ function formatRole(roleName?: string | null) {
 export function AppShell({ title, description, children }: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, logout, status } = useAuth();
 
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
 
@@ -124,10 +125,31 @@ export function AppShell({ title, description, children }: AppShellProps) {
     authUser?.full_name || authUser?.email || "Usuario Kadosh";
   const displayRole = formatRole(authUser?.role_name || authUser?.role);
 
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.replace("/login");
+    }
+  }, [router, status]);
+
   function confirmLogout() {
     logout();
     setIsLogoutDialogOpen(false);
     router.push("/login");
+  }
+
+  if (status === "loading") {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-slate-50">
+        <div className="flex items-center gap-3 text-sm font-medium text-slate-600">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          Validando sesión...
+        </div>
+      </main>
+    );
+  }
+
+  if (status === "unauthenticated") {
+    return null;
   }
 
   return (
