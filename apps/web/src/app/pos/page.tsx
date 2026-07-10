@@ -75,6 +75,7 @@ type CartItem = {
 
 const manualPaymentMethods = ["CASH", "YAPE", "PLIN", "TRANSFER", "POS"] as const;
 const PENDING_TABLET_SALE_STORAGE_KEY = "kadosh_pending_tablet_sale_id";
+const CART_DRAFT_STORAGE_KEY = "kadosh_pos_cart_draft";
 
 type ManualReceipt = {
   sale: Sale;
@@ -167,6 +168,8 @@ export default function PosPage() {
   const [isCancellingTabletSale, setIsCancellingTabletSale] = useState(false);
   const saleFlowInProgressRef = useRef(false);
   const lastScannerScanIdRef = useRef<string | null>(null);
+  const scannerPollingErrorShownRef = useRef(false);
+  const cartDraftHydratedRef = useRef(false);
   const productSearchInputRef = useRef<HTMLInputElement | null>(null);
   const scannerBufferRef = useRef("");
   const scannerBufferTimeoutRef = useRef<number | null>(null);
@@ -183,7 +186,7 @@ export default function PosPage() {
     [activeCustomerDisplayDevices, selectedDeviceId],
   );
 
-  function buildScannerUrl(session: ScannerSession) {
+  const buildScannerUrl = useCallback((session: ScannerSession) => {
     const scannerWebUrl = env.scannerWebUrl.trim();
     const scannerApiUrl = env.scannerApiUrl.trim();
     const scannerPageUrl = new URL(
@@ -208,7 +211,77 @@ export default function PosPage() {
     }
 
     return scannerPageUrl.toString();
-  }
+  }, []);
+
+  useEffect(() => {
+    if (!cartDraftHydratedRef.current) return;
+
+    if (cartItems.length === 0) {
+      window.sessionStorage.removeItem(CART_DRAFT_STORAGE_KEY);
+      return;
+    }
+
+    window.sessionStorage.setItem(
+      CART_DRAFT_STORAGE_KEY,
+      JSON.stringify(cartItems),
+    );
+  }, [cartItems]);
+
+  useEffect(() => {
+    const rawDraft = window.sessionStorage.getItem(CART_DRAFT_STORAGE_KEY);
+
+    if (rawDraft) {
+      try {
+        const storedItems = JSON.parse(rawDraft) as CartItem[];
+
+        if (Array.isArray(storedItems)) {
+          queueMicrotask(() => setCartItems(storedItems));
+        }
+      } catch {
+        window.sessionStorage.removeItem(CART_DRAFT_STORAGE_KEY);
+      }
+    }
+
+    cartDraftHydratedRef.current = true;
+  }, []);
+
+  useEffect(() => {
+    if (!token) return;
+
+    const storedSession = scannerService.getStoredSession();
+
+    if (!storedSession) return;
+
+    let isActive = true;
+    const storedScannerUrl = buildScannerUrl(storedSession);
+
+    lastScannerScanIdRef.current = scannerService.getLastScanId(
+      storedSession.id,
+    );
+    queueMicrotask(() => {
+      if (!isActive) return;
+
+      setScannerSession(storedSession);
+      setScannerUrl(storedScannerUrl);
+    });
+
+    QRCode.toDataURL(storedScannerUrl, {
+      color: {
+        dark: "#020617",
+        light: "#ffffff",
+      },
+      errorCorrectionLevel: "M",
+      margin: 2,
+      scale: 8,
+      width: 220,
+    }).then((dataUrl) => {
+      if (isActive) setScannerQrDataUrl(dataUrl);
+    });
+
+    return () => {
+      isActive = false;
+    };
+  }, [buildScannerUrl, token]);
 
   const loadData = useCallback(async () => {
     if (!token) {
@@ -678,6 +751,9 @@ export default function PosPage() {
       });
 
       lastScannerScanIdRef.current = null;
+      scannerPollingErrorShownRef.current = false;
+      scannerService.saveSession(createdSession);
+      scannerService.saveLastScanId(createdSession.id, null);
       setScannerSession(createdSession);
       setScannerUrl(createdScannerUrl);
       setScannerQrDataUrl(createdScannerQrDataUrl);
@@ -714,9 +790,11 @@ export default function PosPage() {
       return;
     }
 
+    const activeScannerSession = scannerSession;
+    const accessToken = token;
     let isPolling = false;
 
-    const intervalId = window.setInterval(() => {
+    function pollScannerSession() {
       if (isPolling) {
         return;
       }
@@ -724,28 +802,47 @@ export default function PosPage() {
       isPolling = true;
 
       scannerService
-        .pollSession(scannerSession.id, token, lastScannerScanIdRef.current)
+        .pollSession(
+          activeScannerSession.id,
+          accessToken,
+          lastScannerScanIdRef.current,
+        )
         .then(async (response) => {
+          scannerPollingErrorShownRef.current = false;
+
           for (const scan of response.scans) {
             await handleScannerCode(scan.code);
             lastScannerScanIdRef.current = scan.id;
+            scannerService.saveLastScanId(activeScannerSession.id, scan.id);
           }
         })
         .catch((error) => {
-          const message =
-            error instanceof ApiClientError
-              ? error.message
-              : "Se perdió la conexión con el escáner móvil.";
+          const sessionIsInvalid =
+            error instanceof ApiClientError &&
+            (error.status === 403 || error.status === 404);
 
-          toast.error(message);
-          setScannerSession(null);
-          setScannerUrl("");
-          setScannerQrDataUrl("");
+          if (sessionIsInvalid) {
+            scannerService.clearStoredSession();
+            setScannerSession(null);
+            setScannerUrl("");
+            setScannerQrDataUrl("");
+            toast.error(
+              "La vinculación del celular expiró. Vincúlalo nuevamente.",
+            );
+          } else if (!scannerPollingErrorShownRef.current) {
+            scannerPollingErrorShownRef.current = true;
+            toast.error(
+              "No se pudo consultar el escáner. Se reintentará automáticamente.",
+            );
+          }
         })
         .finally(() => {
           isPolling = false;
         });
-    }, 1000);
+    }
+
+    void pollScannerSession();
+    const intervalId = window.setInterval(pollScannerSession, 1000);
 
     return () => {
       window.clearInterval(intervalId);
