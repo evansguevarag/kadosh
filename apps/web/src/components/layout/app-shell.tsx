@@ -215,12 +215,12 @@ export function AppShell({ title, description, children }: AppShellProps) {
 
       <Dialog open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
         <DialogContent
-          className="left-0 top-0 h-dvh w-[min(88vw,20rem)] max-w-none -translate-x-0 -translate-y-0 content-start gap-0 rounded-none p-0 lg:hidden"
+          className="inset-y-0 left-0 h-[100dvh] max-h-none w-[min(88vw,20rem)] max-w-none -translate-x-0 -translate-y-0 content-start gap-0 overflow-hidden rounded-none p-0 lg:hidden"
           showCloseButton
         >
           <DialogTitle className="sr-only">Navegación principal</DialogTitle>
           <div className="flex h-full min-h-0 flex-col bg-white">
-            <div className="flex items-center gap-3 border-b px-4 py-4">
+            <div className="flex items-center gap-3 border-b px-4 pb-4 pt-[max(1rem,env(safe-area-inset-top))]">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-950 text-white">
                 <ShoppingBag className="h-5 w-5" />
               </div>
@@ -254,7 +254,7 @@ export function AppShell({ title, description, children }: AppShellProps) {
               })}
             </nav>
 
-            <div className="border-t bg-slate-50 p-4">
+            <div className="border-t bg-slate-50 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4">
               <p className="truncate text-sm font-bold">{displayName}</p>
               <p className="mt-0.5 text-xs text-slate-500">{displayRole}</p>
               <Button
