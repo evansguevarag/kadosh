@@ -14,13 +14,13 @@ export type ProductUpdateRequest = Partial<ProductCreateRequest> & {
 };
 
 export const productService = {
-  listCategories(token?: string | null): Promise<Category[]> {
+  listCategories(token: string): Promise<Category[]> {
     return apiClient.get<Category[]>("/categories", {
       token,
     });
   },
 
-  listProducts(token?: string | null): Promise<Product[]> {
+  listProducts(token: string): Promise<Product[]> {
     return apiClient.get<Product[]>("/products", {
       token,
     });

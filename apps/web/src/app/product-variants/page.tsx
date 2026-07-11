@@ -139,6 +139,10 @@ export default function ProductVariantsPage() {
   );
 
   const loadData = useCallback(async () => {
+    if (!token) {
+      return;
+    }
+
     try {
       setIsLoading(true);
 

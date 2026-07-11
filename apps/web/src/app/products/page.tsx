@@ -57,6 +57,10 @@ export default function ProductsPage() {
   );
 
   const loadData = useCallback(async () => {
+    if (!token) {
+      return;
+    }
+
     try {
       setIsLoading(true);
 

@@ -24,13 +24,13 @@ export type ProductVariantBarcodeBackfillResponse = {
 };
 
 export const productVariantService = {
-  listProducts(token?: string | null): Promise<Product[]> {
+  listProducts(token: string): Promise<Product[]> {
     return apiClient.get<Product[]>("/products", {
       token,
     });
   },
 
-  listVariants(token?: string | null): Promise<ProductVariant[]> {
+  listVariants(token: string): Promise<ProductVariant[]> {
     return apiClient.get<ProductVariant[]>("/product-variants", {
       token,
     });
@@ -38,7 +38,7 @@ export const productVariantService = {
 
   listVariantsByProduct(
     productId: string,
-    token?: string | null,
+    token: string,
   ): Promise<ProductVariant[]> {
     return apiClient.get<ProductVariant[]>(
       `/product-variants/by-product/${productId}`,
