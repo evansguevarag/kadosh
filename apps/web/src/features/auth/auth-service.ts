@@ -1,4 +1,6 @@
 import { apiClient } from "@/services/api-client";
+import { clearPosWorkspaceStorage } from "@/features/pos/pos-workspace-storage";
+import { scannerService } from "@/features/scanner/scanner-service";
 import type {
   AuthUser,
   LoginRequest,
@@ -158,5 +160,7 @@ export const authService = {
     window.localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
     window.localStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY);
     window.localStorage.removeItem(AUTH_USER_STORAGE_KEY);
+    scannerService.clearStoredSession();
+    clearPosWorkspaceStorage();
   },
 };

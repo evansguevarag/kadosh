@@ -650,6 +650,44 @@ export default function CustomerDisplayPage() {
                 </>
               ) : activeSession ? (
                 <>
+                  {activeSession.sale?.items.length ? (
+                    <div className="overflow-hidden rounded-2xl border bg-white text-left">
+                      <div className="flex items-center justify-between gap-4 border-b bg-slate-50 px-5 py-4">
+                        <p className="font-semibold text-slate-950">Tu compra</p>
+                        <p className="text-xs font-medium text-slate-500">
+                          {activeSession.sale.sale_number}
+                        </p>
+                      </div>
+                      <div className="divide-y">
+                        {activeSession.sale.items.map((item) => {
+                          const variant = [item.size, item.color]
+                            .filter(Boolean)
+                            .join(" · ");
+
+                          return (
+                            <div
+                              className="grid grid-cols-[1fr_auto] gap-4 px-5 py-4"
+                              key={item.id}
+                            >
+                              <div className="min-w-0">
+                                <p className="font-medium text-slate-950">
+                                  {item.product_name}
+                                </p>
+                                <p className="mt-1 text-sm text-slate-500">
+                                  {item.quantity} × {formatMoney(item.unit_price)}
+                                  {variant ? ` · ${variant}` : ""}
+                                </p>
+                              </div>
+                              <p className="font-semibold text-slate-950">
+                                {formatMoney(item.subtotal)}
+                              </p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : null}
+
                   <div className="rounded-3xl bg-slate-950 px-8 py-10 text-white">
                     <p className="text-sm text-slate-300">Total a pagar</p>
                     <p className="mt-3 text-5xl font-bold tracking-tight">

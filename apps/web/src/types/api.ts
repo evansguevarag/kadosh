@@ -170,6 +170,24 @@ export type PaymentSession = {
   cancelled_at: string | null;
   created_at: string;
   updated_at: string;
+  sale?: {
+    sale_number: string;
+    subtotal: string;
+    discount_total: string;
+    tax_total: string;
+    total: string;
+    items: Array<{
+      id: string;
+      product_name: string;
+      variant_sku: string;
+      size: string | null;
+      color: string | null;
+      quantity: number;
+      unit_price: string;
+      discount_amount: string;
+      subtotal: string;
+    }>;
+  };
 };
 
 export type SalesSummaryReport = {

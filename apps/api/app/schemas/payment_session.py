@@ -63,3 +63,38 @@ class PaymentSessionResponse(BaseModel):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class CustomerDisplaySaleItemResponse(BaseModel):
+    """Detalle mínimo de un producto mostrado en la pantalla del cliente."""
+
+    id: UUID
+    product_name: str
+    variant_sku: str
+    size: str | None
+    color: str | None
+    quantity: int
+    unit_price: Decimal
+    discount_amount: Decimal
+    subtotal: Decimal
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class CustomerDisplaySaleResponse(BaseModel):
+    """Resumen de compra visible antes de que el cliente pague."""
+
+    sale_number: str
+    subtotal: Decimal
+    discount_total: Decimal
+    tax_total: Decimal
+    total: Decimal
+    items: list[CustomerDisplaySaleItemResponse]
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class CustomerDisplayPaymentSessionResponse(PaymentSessionResponse):
+    """Sesión de pago enriquecida con la compra enviada a la tablet."""
+
+    sale: CustomerDisplaySaleResponse

@@ -3,11 +3,12 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, HTTPException, status
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.api.v1.dependencies import get_db
 from app.models.payment_session import PaymentSession
-from app.schemas.payment_session import PaymentSessionResponse
+from app.models.sale import Sale
+from app.schemas.payment_session import CustomerDisplayPaymentSessionResponse
 from app.schemas.sale import SaleResponse
 from app.services.customer_display_device_service import (
     CustomerDisplayDeviceService,
@@ -21,13 +22,13 @@ device_service = CustomerDisplayDeviceService()
 
 @router.get(
     "/sessions/{device_id}",
-    response_model=list[PaymentSessionResponse],
+    response_model=list[CustomerDisplayPaymentSessionResponse],
 )
 def list_active_sessions_for_customer_display(
     device_id: UUID,
     db: Session = Depends(get_db),
     x_device_token: str = Header(alias="X-Device-Token"),
-) -> list[PaymentSessionResponse]:
+) -> list[CustomerDisplayPaymentSessionResponse]:
     device_service.validate_device_token(
         db,
         device_id=device_id,
@@ -38,6 +39,7 @@ def list_active_sessions_for_customer_display(
 
     statement = (
         select(PaymentSession)
+        .options(selectinload(PaymentSession.sale).selectinload(Sale.items))
         .where(
             PaymentSession.device_id == str(device_id),
             PaymentSession.status.in_(
@@ -56,7 +58,7 @@ def list_active_sessions_for_customer_display(
     sessions = list(db.scalars(statement).all())
 
     return [
-        PaymentSessionResponse.model_validate(session)
+        CustomerDisplayPaymentSessionResponse.model_validate(session)
         for session in sessions
     ]
 
@@ -99,4 +101,3 @@ def get_customer_display_receipt(
         )
 
     return SaleResponse.model_validate(sale)
-

@@ -48,6 +48,10 @@ import { useAuth } from "@/features/auth/use-auth";
 import { customerService } from "@/features/customers/customer-service";
 import type { CustomerDisplayDevice } from "@/features/payments/customer-display-device-service";
 import { paymentService } from "@/features/payments/payment-service";
+import {
+  PENDING_TABLET_SALE_STORAGE_KEY,
+  POS_CART_DRAFT_STORAGE_KEY,
+} from "@/features/pos/pos-workspace-storage";
 import { productVariantService } from "@/features/products/product-variant-service";
 import {
   saleService,
@@ -74,8 +78,6 @@ type CartItem = {
 };
 
 const manualPaymentMethods = ["CASH", "YAPE", "PLIN", "TRANSFER", "POS"] as const;
-const PENDING_TABLET_SALE_STORAGE_KEY = "kadosh_pending_tablet_sale_id";
-const CART_DRAFT_STORAGE_KEY = "kadosh_pos_cart_draft";
 
 type ManualReceipt = {
   sale: Sale;
@@ -217,18 +219,18 @@ export default function PosPage() {
     if (!cartDraftHydratedRef.current) return;
 
     if (cartItems.length === 0) {
-      window.sessionStorage.removeItem(CART_DRAFT_STORAGE_KEY);
+      window.sessionStorage.removeItem(POS_CART_DRAFT_STORAGE_KEY);
       return;
     }
 
     window.sessionStorage.setItem(
-      CART_DRAFT_STORAGE_KEY,
+      POS_CART_DRAFT_STORAGE_KEY,
       JSON.stringify(cartItems),
     );
   }, [cartItems]);
 
   useEffect(() => {
-    const rawDraft = window.sessionStorage.getItem(CART_DRAFT_STORAGE_KEY);
+    const rawDraft = window.sessionStorage.getItem(POS_CART_DRAFT_STORAGE_KEY);
 
     if (rawDraft) {
       try {
@@ -238,7 +240,7 @@ export default function PosPage() {
           queueMicrotask(() => setCartItems(storedItems));
         }
       } catch {
-        window.sessionStorage.removeItem(CART_DRAFT_STORAGE_KEY);
+        window.sessionStorage.removeItem(POS_CART_DRAFT_STORAGE_KEY);
       }
     }
 
