@@ -87,7 +87,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
           description: "!text-xs !leading-4 !text-slate-500",
           icon: "!mr-1 !size-7",
           closeButton:
-            "!left-auto !right-3 !top-1/2 !size-7 !translate-x-0 !-translate-y-1/2 !border-0 !bg-slate-100 !text-slate-500 hover:!bg-slate-200 hover:!text-slate-800",
+            "!size-7 !border-0 !bg-slate-100 !text-slate-500 hover:!bg-slate-200 hover:!text-slate-800",
         },
       }}
       {...props}

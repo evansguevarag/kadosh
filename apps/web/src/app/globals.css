@@ -48,6 +48,16 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* Sonner fija el cierre en top: 0; esta regla lo centra en toasts de una o más líneas. */
+[data-sonner-toast].cn-toast [data-close-button] {
+  top: 50% !important;
+  right: 0.75rem !important;
+  left: auto !important;
+  width: 1.75rem !important;
+  height: 1.75rem !important;
+  transform: translateY(-50%) !important;
+}
+
 :root {
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
