@@ -72,7 +72,7 @@ export default function ReturnsPage() {
   const selectedReplacement = useMemo(() => variants.find((variant) => variant.id === replacementId) ?? null, [replacementId, variants]);
   const filteredSales = useMemo(() => {
     const search = saleSearch.trim().toLowerCase();
-    if (!search) return sales.slice(0, 8);
+    if (!search) return [];
     return sales.filter((sale) => [sale.sale_number, saleCustomer(sale), sale.customer?.document_number, sale.customer?.phone, sale.total]
       .filter(Boolean)
       .some((value) => String(value).toLowerCase().includes(search)))
@@ -262,7 +262,7 @@ export default function ReturnsPage() {
                 <>
                   <div className="relative"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><Input className="pl-9" value={saleSearch} onChange={(event) => setSaleSearch(event.target.value)} placeholder="Número de compra, DNI, nombre, teléfono o monto" autoFocus /></div>
                   <p className="text-xs text-slate-500">Puedes pedir al cliente el número que aparece en su comprobante, por ejemplo V-2026..., o buscarlo por sus datos.</p>
-                  {isLoading ? <div className="flex items-center gap-2 text-sm text-slate-500"><Loader2 className="h-4 w-4 animate-spin" />Buscando ventas...</div> : filteredSales.length === 0 ? <p className="rounded-lg border border-dashed p-4 text-sm text-slate-500">No encontramos una venta pagada con esos datos.</p> : <div className="divide-y overflow-hidden rounded-lg border">{filteredSales.map((sale) => <button className="grid w-full gap-2 p-4 text-left transition hover:bg-slate-50 sm:grid-cols-[1fr_auto]" key={sale.id} type="button" onClick={() => chooseSale(sale)}><div><p className="font-semibold">{sale.sale_number}</p><p className="mt-1 text-sm text-slate-600">{saleCustomer(sale)} · {sale.customer?.document_number || "Sin documento"}</p><p className="mt-1 text-xs text-slate-500">{saleDate(sale)} · {sale.items.length} producto{sale.items.length === 1 ? "" : "s"}</p></div><p className="font-bold sm:self-center">{money(sale.total)}</p></button>)}</div>}
+                  {isLoading ? <div className="flex items-center gap-2 text-sm text-slate-500"><Loader2 className="h-4 w-4 animate-spin" />Cargando buscador...</div> : !saleSearch.trim() ? <p className="rounded-lg border border-dashed p-4 text-sm text-slate-500">Escribe un dato de la compra o escanea el QR de la boleta para identificarla.</p> : filteredSales.length === 0 ? <p className="rounded-lg border border-dashed p-4 text-sm text-slate-500">No encontramos una venta pagada con esos datos.</p> : <div className="divide-y overflow-hidden rounded-lg border">{filteredSales.map((sale) => <button className="grid w-full gap-2 p-4 text-left transition hover:bg-slate-50 sm:grid-cols-[1fr_auto]" key={sale.id} type="button" onClick={() => chooseSale(sale)}><div><p className="font-semibold">{sale.sale_number}</p><p className="mt-1 text-sm text-slate-600">{saleCustomer(sale)} · {sale.customer?.document_number || "Sin documento"}</p><p className="mt-1 text-xs text-slate-500">{saleDate(sale)} · {sale.items.length} producto{sale.items.length === 1 ? "" : "s"}</p></div><p className="font-bold sm:self-center">{money(sale.total)}</p></button>)}</div>}
                 </>
               )}
             </CardContent>
