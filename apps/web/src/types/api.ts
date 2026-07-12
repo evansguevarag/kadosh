@@ -111,6 +111,7 @@ export type SaleItem = {
   color: string | null;
   quantity: number;
   unit_price: string;
+  cost_price: string;
   discount_amount: string;
   subtotal: string;
 };
@@ -118,6 +119,7 @@ export type SaleItem = {
 export type Sale = {
   id: string;
   sale_number: string;
+  receipt_token: string;
   seller_id: string;
   customer_id: string | null;
   subtotal: string;
@@ -132,6 +134,43 @@ export type Sale = {
   updated_at: string;
   items: SaleItem[];
   customer: Customer | null;
+};
+
+export type ReturnTransaction = {
+  id: string;
+  return_number: string;
+  original_sale_id: string;
+  processed_by_id: string;
+  transaction_type: "RETURN" | "EXCHANGE";
+  reason: string;
+  item_condition: string;
+  inventory_resolution: string;
+  returned_value: string;
+  replacement_value: string;
+  difference_amount: string;
+  settlement_method: string | null;
+  notes: string | null;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  items: Array<{
+    id: string;
+    sale_item_id: string;
+    quantity: number;
+    unit_value: string;
+    subtotal: string;
+  }>;
+  replacements: Array<{
+    id: string;
+    product_variant_id: string;
+    product_name: string;
+    variant_sku: string;
+    size: string | null;
+    color: string | null;
+    quantity: number;
+    unit_price: string;
+    subtotal: string;
+  }>;
 };
 
 export type Payment = {
@@ -197,6 +236,9 @@ export type SalesSummaryReport = {
   cancelled_sales: number;
   total_revenue: string;
   average_ticket: string;
+  total_cost: string;
+  gross_profit: string;
+  gross_margin_percentage: string;
 };
 
 export type LowStockProduct = {

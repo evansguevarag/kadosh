@@ -45,6 +45,18 @@ class SaleRepository:
 
         return self.db.scalar(statement)
 
+    def find_by_receipt_token(self, receipt_token: str) -> Sale | None:
+        statement = (
+            select(Sale)
+            .options(
+                selectinload(Sale.items),
+                selectinload(Sale.customer),
+                selectinload(Sale.payments),
+            )
+            .where(Sale.receipt_token == receipt_token)
+        )
+        return self.db.scalar(statement)
+
     def create(self, sale: Sale) -> Sale:
         """Crea una nueva venta."""
 

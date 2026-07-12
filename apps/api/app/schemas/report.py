@@ -15,6 +15,9 @@ class SalesSummaryReportResponse(BaseModel):
     cancelled_sales: int = Field(examples=[0])
     total_revenue: Decimal = Field(examples=[Decimal("1598.00")])
     average_ticket: Decimal = Field(examples=[Decimal("79.90")])
+    total_cost: Decimal = Field(examples=[Decimal("700.00")])
+    gross_profit: Decimal = Field(examples=[Decimal("898.00")])
+    gross_margin_percentage: Decimal = Field(examples=[Decimal("56.20")])
 
 
 class LowStockProductResponse(BaseModel):

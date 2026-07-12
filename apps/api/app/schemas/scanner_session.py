@@ -4,10 +4,15 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 
+class ScannerSessionCreate(BaseModel):
+    purpose: str = Field(default="POS_PRODUCT_SCAN")
+
+
 class ScannerSessionCreateResponse(BaseModel):
     id: UUID
     pairing_token: str
     expires_at: datetime
+    purpose: str
 
 
 class ScannerScanCreate(BaseModel):
@@ -23,4 +28,5 @@ class ScannerScanResponse(BaseModel):
 
 class ScannerSessionPollResponse(BaseModel):
     session_id: UUID
+    purpose: str
     scans: list[ScannerScanResponse]

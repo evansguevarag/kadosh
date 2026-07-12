@@ -98,12 +98,61 @@ function escapeCsvCell(value: string | number | null | undefined) {
   return `"${String(value ?? "").replace(/"/g, '""')}"`;
 }
 
+function formatMoney(value: number) {
+  return new Intl.NumberFormat("es-PE", {
+    style: "currency",
+    currency: "PEN",
+  }).format(Number.isFinite(value) ? value : 0);
+}
+
+function PriceBreakdown({ costPrice, salePrice }: { costPrice: string; salePrice: string }) {
+  const cost = Number(costPrice || 0);
+  const finalPrice = Number(salePrice || 0);
+  const taxableAmount = finalPrice / 1.18;
+  const includedTax = finalPrice - taxableAmount;
+  const estimatedProfit = finalPrice - cost;
+  const marginPercentage = finalPrice > 0 ? (estimatedProfit / finalPrice) * 100 : 0;
+
+  return (
+    <div className="rounded-xl border bg-slate-50 p-4 text-sm">
+      <p className="font-semibold text-slate-950">Precio final con IGV incluido</p>
+      <p className="mt-1 text-xs leading-5 text-slate-600">
+        El cliente paga {formatMoney(finalPrice)}. El IGV del 18% ya está incluido y no se suma nuevamente al cobrar.
+      </p>
+      <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 border-t pt-3 sm:grid-cols-4">
+        <div>
+          <p className="text-xs text-slate-500">Base imponible</p>
+          <p className="mt-1 font-semibold">{formatMoney(taxableAmount)}</p>
+        </div>
+        <div>
+          <p className="text-xs text-slate-500">IGV incluido</p>
+          <p className="mt-1 font-semibold">{formatMoney(includedTax)}</p>
+        </div>
+        <div>
+          <p className="text-xs text-slate-500">Utilidad estimada</p>
+          <p className={`mt-1 font-semibold ${estimatedProfit < 0 ? "text-red-600" : ""}`}>
+            {formatMoney(estimatedProfit)}
+          </p>
+        </div>
+        <div>
+          <p className="text-xs text-slate-500">Margen estimado</p>
+          <p className={`mt-1 font-semibold ${marginPercentage < 0 ? "text-red-600" : ""}`}>
+            {marginPercentage.toFixed(1)}%
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ProductVariantsPage() {
   const router = useRouter();
   const { token, isAuthenticated } = useAuth();
 
   const [products, setProducts] = useState<Product[]>([]);
   const [variants, setVariants] = useState<ProductVariant[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
   const [productId, setProductId] = useState("");
   const [sku, setSku] = useState("");
   const [size, setSize] = useState("");
@@ -137,6 +186,18 @@ export default function ProductVariantsPage() {
     () => sortVariantsForLabels(variants.filter((variant) => getPrintableCode(variant))),
     [variants],
   );
+  const filteredVariants = useMemo(() => {
+    const search = searchTerm.trim().toLowerCase();
+    return variants.filter((variant) => {
+      const matchesStatus = statusFilter === "ALL" ||
+        (statusFilter === "ACTIVE" ? variant.is_active : !variant.is_active);
+      const product = products.find((item) => item.id === variant.product_id);
+      const matchesSearch = !search || [variant.sku, variant.barcode, variant.size, variant.color, product?.name]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(search));
+      return matchesStatus && matchesSearch;
+    });
+  }, [products, searchTerm, statusFilter, variants]);
 
   const loadData = useCallback(async () => {
     if (!token) {
@@ -539,19 +600,23 @@ export default function ProductVariantsPage() {
           </CardHeader>
 
           <CardContent>
+            <div className="mb-4 grid gap-3 sm:grid-cols-[1fr_12rem]">
+              <Input placeholder="Buscar SKU, código, producto, talla o color" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} />
+              <select className="h-10 rounded-md border bg-white px-3 text-sm" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}><option value="ALL">Todos los estados</option><option value="ACTIVE">Activas</option><option value="INACTIVE">Inactivas</option></select>
+            </div>
             {isLoading ? (
               <div className="flex items-center gap-2 text-sm text-slate-500">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Cargando catálogo...
               </div>
-            ) : variants.length === 0 ? (
+            ) : filteredVariants.length === 0 ? (
               <p className="text-sm text-slate-500">
                 Todavía no hay presentaciones registradas.
               </p>
             ) : (
               <>
                 <div className="space-y-3 md:hidden">
-                  {variants.map((variant) => (
+                  {filteredVariants.map((variant) => (
                     <div key={variant.id} className="rounded-lg border bg-white p-3">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
@@ -641,7 +706,7 @@ export default function ProductVariantsPage() {
                   </TableHeader>
 
                   <TableBody>
-                    {variants.map((variant) => (
+                    {filteredVariants.map((variant) => (
                       <TableRow key={variant.id}>
                         <TableCell className="font-medium">
                           {variant.sku}
@@ -837,6 +902,8 @@ export default function ProductVariantsPage() {
               </div>
             </div>
 
+            <PriceBreakdown costPrice={costPrice} salePrice={salePrice} />
+
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="stockQuantity">Stock inicial</Label>
@@ -1009,6 +1076,11 @@ export default function ProductVariantsPage() {
                 />
               </div>
             </div>
+
+            <PriceBreakdown
+              costPrice={editCostPrice}
+              salePrice={editSalePrice}
+            />
 
             <div className="rounded-xl border bg-slate-50 p-3 text-xs text-slate-500">
               Stock actual: {editingVariant?.stock_quantity ?? 0}. Para sumar,

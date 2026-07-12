@@ -5,6 +5,7 @@ from app.models.inventory_movement import InventoryMovement
 from app.models.payment import Payment
 from app.models.password_reset_otp import PasswordResetOtp
 from app.models.payment_session import PaymentSession
+from app.models.return_transaction import ReplacementItem, ReturnItem, ReturnTransaction
 from app.models.product import Product
 from app.models.product_variant import ProductVariant
 from app.models.role import Role
@@ -21,6 +22,9 @@ __all__ = [
     "Payment",
     "PasswordResetOtp",
     "PaymentSession",
+    "ReturnTransaction",
+    "ReturnItem",
+    "ReplacementItem",
     "Product",
     "ProductVariant",
     "Role",

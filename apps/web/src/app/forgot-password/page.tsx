@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Eye,
@@ -36,6 +37,7 @@ const stepLabels: Record<PasswordResetStep, string> = {
 };
 
 export default function ForgotPasswordPage() {
+  const router = useRouter();
   const [resetStep, setResetStep] = useState<PasswordResetStep>("email");
   const [email, setEmail] = useState("");
   const [otpCode, setOtpCode] = useState("");
@@ -84,7 +86,7 @@ export default function ForgotPasswordPage() {
       });
 
       toast.success(response.message);
-      setNewPassword("");
+      router.replace("/login");
     } catch (error) {
       const message =
         error instanceof ApiClientError

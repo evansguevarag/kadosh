@@ -19,13 +19,18 @@ class ScannerSessionService:
     def __init__(self, db: Session) -> None:
         self.db = db
 
-    def create_session(self, current_user: User) -> ScannerSessionCreateResponse:
+    def create_session(self, current_user: User, purpose: str) -> ScannerSessionCreateResponse:
         now = datetime.now(timezone.utc)
         self._remove_expired_sessions(now)
+
+        normalized_purpose = purpose.strip().upper()
+        if normalized_purpose not in {"POS_PRODUCT_SCAN", "RECEIPT_LOOKUP"}:
+            raise HTTPException(status_code=400, detail="Propósito de escáner inválido.")
 
         session = ScannerSession(
             seller_id=current_user.id,
             pairing_token=token_urlsafe(32),
+            purpose=normalized_purpose,
             expires_at=now + timedelta(hours=4),
         )
 
@@ -37,6 +42,7 @@ class ScannerSessionService:
             id=session.id,
             pairing_token=session.pairing_token,
             expires_at=session.expires_at,
+            purpose=session.purpose,
         )
 
     def register_scan(
@@ -97,7 +103,11 @@ class ScannerSessionService:
         if after_scan_id is not None:
             scan_responses = self._filter_scans_after(scan_responses, after_scan_id)
 
-        return ScannerSessionPollResponse(session_id=session_id, scans=scan_responses)
+        return ScannerSessionPollResponse(
+            session_id=session_id,
+            purpose=session.purpose,
+            scans=scan_responses,
+        )
 
     def _get_valid_session(
         self,

@@ -4,6 +4,7 @@ export type ScannerSession = {
   id: string;
   pairing_token: string;
   expires_at: string;
+  purpose: "POS_PRODUCT_SCAN" | "RECEIPT_LOOKUP";
 };
 
 export type ScannerScan = {
@@ -14,6 +15,7 @@ export type ScannerScan = {
 
 export type ScannerSessionPoll = {
   session_id: string;
+  purpose: "POS_PRODUCT_SCAN" | "RECEIPT_LOOKUP";
   scans: ScannerScan[];
 };
 
@@ -25,10 +27,13 @@ function canUseStorage(): boolean {
 }
 
 export const scannerService = {
-  createSession(token: string): Promise<ScannerSession> {
-    return apiClient.post<ScannerSession, Record<string, never>>(
+  createSession(
+    token: string,
+    purpose: "POS_PRODUCT_SCAN" | "RECEIPT_LOOKUP" = "POS_PRODUCT_SCAN",
+  ): Promise<ScannerSession> {
+    return apiClient.post<ScannerSession, { purpose: string }>(
       "/scanner-sessions",
-      {},
+      { purpose },
       { token },
     );
   },

@@ -34,6 +34,13 @@ class ScannerSession(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         index=True,
     )
 
+    purpose: Mapped[str] = mapped_column(
+        String(30),
+        nullable=False,
+        default="POS_PRODUCT_SCAN",
+        server_default="POS_PRODUCT_SCAN",
+    )
+
     expires_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,

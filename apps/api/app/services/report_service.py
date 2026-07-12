@@ -101,6 +101,9 @@ class ReportService:
                 cancelled_sales=0,
                 total_revenue=Decimal("0.00"),
                 average_ticket=Decimal("0.00"),
+                total_cost=Decimal("0.00"),
+                gross_profit=Decimal("0.00"),
+                gross_margin_percentage=Decimal("0.00"),
             )
 
         paid_totals = [sale.total for sale in sales if sale.status == "PAID"]
@@ -108,6 +111,21 @@ class ReportService:
         average_ticket = (
             total_revenue / len(paid_totals)
             if paid_totals
+            else Decimal("0.00")
+        )
+        paid_sales = [sale for sale in sales if sale.status == "PAID"]
+        total_cost = sum(
+            (
+                item.cost_price * item.quantity
+                for sale in paid_sales
+                for item in sale.items
+            ),
+            start=Decimal("0.00"),
+        )
+        gross_profit = total_revenue - total_cost
+        gross_margin = (
+            gross_profit * Decimal("100") / total_revenue
+            if total_revenue > 0
             else Decimal("0.00")
         )
 
@@ -120,6 +138,9 @@ class ReportService:
             cancelled_sales=sum(sale.status == "CANCELLED" for sale in sales),
             total_revenue=total_revenue.quantize(Decimal("0.01")),
             average_ticket=average_ticket.quantize(Decimal("0.01")),
+            total_cost=total_cost.quantize(Decimal("0.01")),
+            gross_profit=gross_profit.quantize(Decimal("0.01")),
+            gross_margin_percentage=gross_margin.quantize(Decimal("0.01")),
         )
 
     def _build_low_stock_products(

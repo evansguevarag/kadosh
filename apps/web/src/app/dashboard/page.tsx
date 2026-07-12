@@ -89,9 +89,7 @@ export default function DashboardPage() {
 
   const pendingSales = useMemo(
     () =>
-      sales.filter(
-        (sale) => sale.status !== "PAID" && sale.status !== "CANCELLED",
-      ),
+      sales.filter((sale) => sale.status === "PENDING_PAYMENT"),
     [sales],
   );
 

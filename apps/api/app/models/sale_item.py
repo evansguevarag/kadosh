@@ -58,6 +58,13 @@ class SaleItem(UUIDPrimaryKeyMixin, Base):
         nullable=False,
     )
 
+    cost_price: Mapped[Decimal] = mapped_column(
+        Numeric(12, 2),
+        nullable=False,
+        default=0,
+        server_default="0",
+    )
+
     discount_amount: Mapped[Decimal] = mapped_column(
         Numeric(12, 2),
         nullable=False,

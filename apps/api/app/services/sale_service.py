@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from uuid import UUID
 
 from fastapi import HTTPException, status
@@ -122,6 +122,7 @@ class SaleService:
                     color=variant.color,
                     quantity=item_payload.quantity,
                     unit_price=unit_price,
+                    cost_price=variant.cost_price,
                     discount_amount=item_payload.discount_amount,
                     subtotal=item_subtotal,
                 )
@@ -147,14 +148,20 @@ class SaleService:
                 subtotal += item_subtotal
 
             discount_total = payload.discount_total
-            tax_total = payload.tax_total
-            total = subtotal - discount_total + tax_total
+            total = subtotal - discount_total
 
             if total < 0:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="El total de la venta no puede ser negativo.",
                 )
+
+            # Los precios al consumidor ya incluyen IGV. Se descompone el total
+            # para el comprobante sin volver a sumar el impuesto al cliente.
+            tax_total = (total * Decimal("18") / Decimal("118")).quantize(
+                Decimal("0.01"),
+                rounding=ROUND_HALF_UP,
+            )
 
             created_sale.subtotal = subtotal
             created_sale.discount_total = discount_total

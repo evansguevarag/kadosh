@@ -28,6 +28,8 @@ import {
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/layout/app-shell";
+import { ReceiptQr } from "@/components/receipts/receipt-qr";
+import { ReceiptBusinessHeader } from "@/components/receipts/receipt-business-header";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -905,10 +907,41 @@ export default function PosPage() {
     productSearchInputRef.current?.focus();
   }
 
-  function handleClearCurrentSale() {
+  async function handleClearCurrentSale() {
+    if (pendingTabletSale) {
+      if (!token) {
+        toast.error("Debes iniciar sesión nuevamente.");
+
+        return;
+      }
+
+      try {
+        setIsCancellingTabletSale(true);
+        await saleService.cancelSale(pendingTabletSale.id, token);
+        setPendingTabletSale(null);
+        window.localStorage.removeItem(PENDING_TABLET_SALE_STORAGE_KEY);
+        await loadData();
+      } catch (error) {
+        const message =
+          error instanceof ApiClientError
+            ? error.message
+            : "No se pudo cancelar la venta pendiente.";
+
+        toast.error(message);
+
+        return;
+      } finally {
+        setIsCancellingTabletSale(false);
+      }
+    }
+
     resetSaleDraft();
     setIsClearSaleDialogOpen(false);
-    toast.success("Venta actual limpiada.");
+    toast.success(
+      pendingTabletSale
+        ? "Venta cancelada, pago pendiente eliminado y stock devuelto."
+        : "Venta actual limpiada.",
+    );
   }
 
   function handleStartNewSale() {
@@ -2047,7 +2080,8 @@ export default function PosPage() {
                     (!hasCartItems &&
                       !customerId &&
                       !customerDocumentNumber &&
-                      !productSearch)
+                      !productSearch &&
+                      !pendingTabletSale)
                   }
                   onClick={() => setIsClearSaleDialogOpen(true)}
                 >
@@ -2146,8 +2180,9 @@ export default function PosPage() {
           <DialogHeader>
             <DialogTitle>Limpiar venta actual</DialogTitle>
             <p className="text-sm text-slate-500">
-              Se quitarán los productos, el cliente, el descuento y las notas
-              ingresadas. Esta acción no afecta ventas ya enviadas o cobradas.
+              {pendingTabletSale
+                ? `Se cancelará la venta ${pendingTabletSale.sale_number}, se quitará el pago pendiente de la tablet y el stock volverá al inventario.`
+                : "Se quitarán los productos, el cliente, el descuento y las notas ingresadas."}
             </p>
           </DialogHeader>
           <DialogFooter>
@@ -2158,8 +2193,15 @@ export default function PosPage() {
             >
               Conservar venta
             </Button>
-            <Button type="button" onClick={handleClearCurrentSale}>
-              Limpiar venta
+            <Button
+              type="button"
+              disabled={isCancellingTabletSale}
+              onClick={() => void handleClearCurrentSale()}
+            >
+              {isCancellingTabletSale ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : null}
+              {pendingTabletSale ? "Cancelar y limpiar" : "Limpiar venta"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -2221,13 +2263,7 @@ function ManualReceiptPrintView({ receipt }: { receipt: ManualReceipt }) {
   return (
     <section className="hidden bg-white p-6 text-slate-950 print:block">
       <div className="mx-auto max-w-[760px]">
-        <div className="border-b border-slate-300 pb-4 text-center">
-          <p className="text-xl font-bold">Kadosh</p>
-          <p className="mt-1 text-sm font-semibold">Comprobante de venta</p>
-          <p className="mt-1 text-xs text-slate-600">
-            Comprobante interno de compra
-          </p>
-        </div>
+        <ReceiptBusinessHeader />
 
         <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
           <div>
@@ -2307,15 +2343,19 @@ function ManualReceiptPrintView({ receipt }: { receipt: ManualReceipt }) {
 
         <div className="ml-auto mt-5 w-full max-w-[320px] space-y-2 text-sm">
           <div className="flex justify-between">
-            <span>Subtotal</span>
+            <span>Importe antes de descuento</span>
             <span>{formatMoney(Number(sale.subtotal))}</span>
           </div>
           <div className="flex justify-between">
             <span>Descuento</span>
             <span>{formatMoney(Number(sale.discount_total))}</span>
           </div>
+          <div className="flex justify-between border-t border-slate-200 pt-2">
+            <span>Operación gravada</span>
+            <span>{formatMoney(Number(sale.total) - Number(sale.tax_total))}</span>
+          </div>
           <div className="flex justify-between">
-            <span>IGV / impuesto</span>
+            <span>IGV incluido (18%)</span>
             <span>{formatMoney(Number(sale.tax_total))}</span>
           </div>
           <div className="flex justify-between border-t border-slate-300 pt-2 text-lg font-bold">
@@ -2328,6 +2368,7 @@ function ManualReceiptPrintView({ receipt }: { receipt: ManualReceipt }) {
           <p>Venta procesada correctamente.</p>
           <p className="mt-1">Gracias por su compra.</p>
         </div>
+        <ReceiptQr receiptToken={sale.receipt_token} />
       </div>
     </section>
   );

@@ -23,12 +23,14 @@ const EMPTY_SCANNER_CONFIG: ScannerConfig = {
   apiBaseUrl: "",
   pairingToken: "",
   sessionId: "",
+  purpose: "POS_PRODUCT_SCAN",
 };
 
 type ScannerConfig = {
   apiBaseUrl: string;
   pairingToken: string;
   sessionId: string;
+  purpose: string;
 };
 
 type BarcodeDetectorResult = {
@@ -71,6 +73,7 @@ function getScannerConfig(
     ),
     pairingToken: routePairingToken || searchPairingToken || "",
     sessionId: routeSessionId || searchSessionId || "",
+    purpose: new URLSearchParams(window.location.search).get("mode") || "POS_PRODUCT_SCAN",
   };
 }
 
@@ -112,6 +115,7 @@ function ScannerPageContent() {
   const apiBaseUrl = scannerConfig.apiBaseUrl;
   const pairingToken = scannerConfig.pairingToken;
   const sessionId = scannerConfig.sessionId;
+  const isReceiptMode = scannerConfig.purpose === "RECEIPT_LOOKUP";
   const cameraStatusMessage =
     !apiBaseUrl
       ? "Leyendo datos de vinculación..."
@@ -172,7 +176,7 @@ function ScannerPageContent() {
         );
 
         if (!response.ok) {
-          throw new Error("No se pudo enviar el código a Caja.");
+          throw new Error("No se pudo enviar el código.");
         }
 
         lastCodeRef.current = normalizedCode;
@@ -181,7 +185,11 @@ function ScannerPageContent() {
         setLastSentCode(normalizedCode);
         setManualCode("");
         setIsCoolingDown(true);
-        setCameraStatus("Código enviado. Retira la prenda y apunta al siguiente.");
+        setCameraStatus(
+          isReceiptMode
+            ? "Boleta enviada correctamente."
+            : "Código enviado. Retira la prenda y apunta al siguiente.",
+        );
 
         if (navigator.vibrate) {
           navigator.vibrate(90);
@@ -196,14 +204,14 @@ function ScannerPageContent() {
           setCameraStatus("Listo para escanear el siguiente código.");
         }, SCAN_COOLDOWN_MS);
 
-        toast.success("Código enviado a Caja.");
+        toast.success(isReceiptMode ? "Boleta enviada." : "Código enviado a Caja.");
       } catch {
-        toast.error("No se pudo enviar el código a Caja.");
+        toast.error("No se pudo enviar el código.");
       } finally {
         setIsSending(false);
       }
     },
-    [apiBaseUrl, pairingToken, sessionId],
+    [apiBaseUrl, isReceiptMode, pairingToken, sessionId],
   );
 
   function handleManualSubmit(event: FormEvent<HTMLFormElement>) {
@@ -268,7 +276,11 @@ function ScannerPageContent() {
           await videoRef.current.play();
         }
 
-        setCameraStatus("Cámara activa. Apunta al código de barras.");
+        setCameraStatus(
+          isReceiptMode
+            ? "Cámara activa. Apunta al QR de la boleta."
+            : "Cámara activa. Apunta al código de barras.",
+        );
 
         const detectFrame = async () => {
           if (!isActive || !videoRef.current) {
@@ -304,7 +316,7 @@ function ScannerPageContent() {
       window.clearTimeout(frameId);
       streamRef.current?.getTracks().forEach((track) => track.stop());
     };
-  }, [apiBaseUrl, pairingToken, sendCode, sessionId]);
+  }, [apiBaseUrl, isReceiptMode, pairingToken, sendCode, sessionId]);
 
   useEffect(() => {
     return () => {
@@ -319,7 +331,9 @@ function ScannerPageContent() {
       <div className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-md flex-col gap-5">
         <header>
           <p className="text-sm text-slate-400">Kadosh</p>
-          <h1 className="text-2xl font-bold">Escáner móvil</h1>
+          <h1 className="text-2xl font-bold">
+            {isReceiptMode ? "Escáner de boletas" : "Escáner de productos"}
+          </h1>
         </header>
 
         <section className="relative overflow-hidden rounded-2xl border border-white/10 bg-black">
@@ -364,12 +378,14 @@ function ScannerPageContent() {
         <form className="space-y-3" onSubmit={handleManualSubmit}>
           <div className="space-y-2">
             <Label htmlFor="manualCode" className="text-white">
-              Código manual
+              {isReceiptMode ? "Código de boleta manual" : "Código manual"}
             </Label>
             <Input
               id="manualCode"
               className="border-white/10 bg-white text-slate-950"
-              placeholder="SKU o código de barras"
+              placeholder={
+                isReceiptMode ? "Token o enlace de la boleta" : "SKU o código de barras"
+              }
               value={manualCode}
               onChange={(event) => setManualCode(event.target.value)}
             />
@@ -385,7 +401,7 @@ function ScannerPageContent() {
             ) : (
               <Send className="h-4 w-4" />
             )}
-            Enviar a Caja
+            {isReceiptMode ? "Enviar boleta" : "Enviar a Caja"}
           </Button>
         </form>
       </div>

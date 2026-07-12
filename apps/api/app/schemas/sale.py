@@ -50,7 +50,7 @@ class SaleCreate(BaseModel):
         ge=0,
         decimal_places=2,
         examples=[Decimal("0.00")],
-        description="IGV u otro impuesto calculado. Por ahora puede enviarse como 0.",
+        description="Campo compatible con clientes anteriores. El backend calcula el IGV incluido en el precio final.",
     )
     notes: str | None = Field(
         default=None,
@@ -71,6 +71,7 @@ class SaleItemResponse(BaseModel):
     color: str | None
     quantity: int
     unit_price: Decimal
+    cost_price: Decimal
     discount_amount: Decimal
     subtotal: Decimal
 
@@ -96,6 +97,7 @@ class SaleResponse(BaseModel):
 
     id: UUID
     sale_number: str
+    receipt_token: str
     seller_id: UUID
     customer_id: UUID | None
     subtotal: Decimal

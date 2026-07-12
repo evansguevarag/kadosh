@@ -1,6 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from sqlalchemy import DateTime, ForeignKey, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import UUID as PostgresUUID
@@ -20,6 +20,14 @@ class Sale(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         unique=True,
         nullable=False,
         index=True,
+    )
+
+    receipt_token: Mapped[str] = mapped_column(
+        String(64),
+        unique=True,
+        nullable=False,
+        index=True,
+        default=lambda: uuid4().hex,
     )
 
     seller_id: Mapped[UUID] = mapped_column(

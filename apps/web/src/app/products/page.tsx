@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Package, Pencil, Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -38,6 +38,8 @@ export default function ProductsPage() {
   const { token, isAuthenticated } = useAuth();
 
   const [products, setProducts] = useState<Product[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoryId, setCategoryId] = useState("");
   const [name, setName] = useState("");
@@ -55,6 +57,17 @@ export default function ProductsPage() {
   const [updatingProductId, setUpdatingProductId] = useState<string | null>(
     null,
   );
+  const filteredProducts = useMemo(() => {
+    const search = searchTerm.trim().toLowerCase();
+    return products.filter((product) => {
+      const matchesStatus = statusFilter === "ALL" ||
+        (statusFilter === "ACTIVE" ? product.is_active : !product.is_active);
+      const matchesSearch = !search || [product.name, product.brand, product.description]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(search));
+      return matchesStatus && matchesSearch;
+    });
+  }, [products, searchTerm, statusFilter]);
 
   const loadData = useCallback(async () => {
     if (!token) {
@@ -281,18 +294,22 @@ export default function ProductsPage() {
         </CardHeader>
 
         <CardContent>
+          <div className="mb-4 grid gap-3 sm:grid-cols-[1fr_12rem]">
+            <Input placeholder="Buscar por nombre, marca o descripción" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} />
+            <select className="h-10 rounded-md border bg-white px-3 text-sm" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}><option value="ALL">Todos los estados</option><option value="ACTIVE">Activos</option><option value="INACTIVE">Inactivos</option></select>
+          </div>
           {isLoading ? (
             <div className="flex items-center gap-2 text-sm text-slate-500">
               <Loader2 className="h-4 w-4 animate-spin" />
               Cargando productos...
             </div>
-          ) : products.length === 0 ? (
+          ) : filteredProducts.length === 0 ? (
             <div className="rounded-xl border border-dashed p-6 text-sm text-slate-500">
               Todavía no hay productos registrados.
             </div>
           ) : (
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {products.map((product) => (
+              {filteredProducts.map((product) => (
                 <ProductCard
                   key={product.id}
                   isUpdating={updatingProductId === product.id}

@@ -15,7 +15,9 @@ from app.api.v1.endpoints import (
     payments,
     product_variants,
     products,
+    public_receipts,
     reports,
+    returns,
     roles,
     sales,
     scanner_sessions,
@@ -30,6 +32,7 @@ api_router.include_router(auth.router)
 api_router.include_router(roles.router)
 api_router.include_router(categories.router)
 api_router.include_router(products.router)
+api_router.include_router(public_receipts.router)
 api_router.include_router(product_variants.router)
 api_router.include_router(inventory.router)
 api_router.include_router(document_lookup.router)
@@ -42,4 +45,5 @@ api_router.include_router(customer_display.router)
 api_router.include_router(customer_display_devices.router)
 api_router.include_router(culqi.router)
 api_router.include_router(reports.router)
+api_router.include_router(returns.router)
 api_router.include_router(audit_logs.router)

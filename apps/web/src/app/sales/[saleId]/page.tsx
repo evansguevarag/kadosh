@@ -7,6 +7,8 @@ import { ArrowLeft, Loader2, Printer, ReceiptText, User } from "lucide-react";
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/layout/app-shell";
+import { ReceiptQr } from "@/components/receipts/receipt-qr";
+import { ReceiptBusinessHeader } from "@/components/receipts/receipt-business-header";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -199,12 +201,24 @@ export default function SaleDetailPage() {
                   <CardTitle className="text-base">Totales</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 text-sm">
-                  <InfoRow label="Subtotal" value={formatMoney(sale.subtotal)} />
+                  <InfoRow
+                    label="Importe antes de descuento"
+                    value={formatMoney(sale.subtotal)}
+                  />
                   <InfoRow
                     label="Descuento"
                     value={formatMoney(sale.discount_total)}
                   />
-                  <InfoRow label="IGV" value={formatMoney(sale.tax_total)} />
+                  <InfoRow
+                    label="Operación gravada"
+                    value={formatMoney(
+                      Number(sale.total) - Number(sale.tax_total),
+                    )}
+                  />
+                  <InfoRow
+                    label="IGV incluido (18%)"
+                    value={formatMoney(sale.tax_total)}
+                  />
                   <div className="flex items-center justify-between border-t pt-3 text-lg font-bold">
                     <span>Total</span>
                     <span>{formatMoney(sale.total)}</span>
@@ -325,13 +339,7 @@ function SaleReceiptPrintView({ sale }: { sale: Sale }) {
   return (
     <section className="hidden bg-white p-6 text-slate-950 print:block">
       <div className="mx-auto max-w-[760px]">
-        <div className="border-b border-slate-300 pb-4 text-center">
-          <p className="text-xl font-bold">Kadosh</p>
-          <p className="mt-1 text-sm font-semibold">Comprobante de venta</p>
-          <p className="mt-1 text-xs text-slate-600">
-            Comprobante interno de compra
-          </p>
-        </div>
+        <ReceiptBusinessHeader />
 
         <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
           <div>
@@ -413,15 +421,19 @@ function SaleReceiptPrintView({ sale }: { sale: Sale }) {
 
         <div className="ml-auto mt-5 w-full max-w-[320px] space-y-2 text-sm">
           <div className="flex justify-between">
-            <span>Subtotal</span>
+            <span>Importe antes de descuento</span>
             <span>{formatMoney(sale.subtotal)}</span>
           </div>
           <div className="flex justify-between">
             <span>Descuento</span>
             <span>{formatMoney(sale.discount_total)}</span>
           </div>
+          <div className="flex justify-between border-t border-slate-200 pt-2">
+            <span>Operación gravada</span>
+            <span>{formatMoney(Number(sale.total) - Number(sale.tax_total))}</span>
+          </div>
           <div className="flex justify-between">
-            <span>IGV / impuesto</span>
+            <span>IGV incluido (18%)</span>
             <span>{formatMoney(sale.tax_total)}</span>
           </div>
           <div className="flex justify-between border-t border-slate-300 pt-2 text-lg font-bold">
@@ -434,6 +446,7 @@ function SaleReceiptPrintView({ sale }: { sale: Sale }) {
           <p>Venta procesada correctamente.</p>
           <p className="mt-1">Gracias por su compra.</p>
         </div>
+        <ReceiptQr receiptToken={sale.receipt_token} />
       </div>
     </section>
   );

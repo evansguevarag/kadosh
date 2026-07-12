@@ -124,6 +124,19 @@ export default function ReportsPage() {
     return revenue / paidSales.length;
   }, [paidSales.length, revenue]);
 
+  const totalCost = useMemo(
+    () => paidSales.reduce(
+      (saleTotal, sale) => saleTotal + sale.items.reduce(
+        (itemTotal, item) => itemTotal + Number(item.cost_price) * item.quantity,
+        0,
+      ),
+      0,
+    ),
+    [paidSales],
+  );
+  const grossProfit = revenue - totalCost;
+  const grossMargin = revenue > 0 ? (grossProfit / revenue) * 100 : 0;
+
   const revenueByMethod = useMemo(() => {
     const totals = new Map<string, number>();
 
@@ -484,7 +497,7 @@ export default function ReportsPage() {
 
           {activeTab === "RESUMEN" ? (
             <>
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 <ReportMetric
                   icon={ReceiptText}
                   label="Ventas pagadas"
@@ -508,6 +521,18 @@ export default function ReportsPage() {
                   label="Bajo stock"
                   note="Inventario actual"
                   value={dashboard.low_stock_products.length}
+                />
+                <ReportMetric
+                  icon={TrendingUp}
+                  label="Utilidad bruta"
+                  note={`Margen ${grossMargin.toFixed(1)}%`}
+                  value={formatMoney(grossProfit)}
+                />
+                <ReportMetric
+                  icon={PackageSearch}
+                  label="Costo vendido"
+                  note="Costo histórico de ventas pagadas"
+                  value={formatMoney(totalCost)}
                 />
               </div>
 

@@ -11,6 +11,8 @@ import {
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/layout/app-shell";
+import { ReceiptQr } from "@/components/receipts/receipt-qr";
+import { ReceiptBusinessHeader } from "@/components/receipts/receipt-business-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -187,10 +189,6 @@ export default function PaymentsPage() {
     }
 
     setReceiptToPrint({ payment, sale });
-
-    window.setTimeout(() => {
-      window.print();
-    }, 50);
   }
 
   return (
@@ -384,13 +382,7 @@ function PaymentReceiptPrintView({ receipt }: { receipt: PaymentReceipt }) {
   return (
     <section className="hidden bg-white p-6 text-slate-950 print:block">
       <div className="mx-auto max-w-[760px]">
-        <div className="border-b border-slate-300 pb-4 text-center">
-          <p className="text-xl font-bold">Kadosh</p>
-          <p className="mt-1 text-sm font-semibold">Comprobante de venta</p>
-          <p className="mt-1 text-xs text-slate-600">
-            Reimpresión de comprobante interno
-          </p>
-        </div>
+        <ReceiptBusinessHeader />
 
         <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
           <div>
@@ -468,15 +460,19 @@ function PaymentReceiptPrintView({ receipt }: { receipt: PaymentReceipt }) {
 
         <div className="ml-auto mt-5 w-full max-w-[320px] space-y-2 text-sm">
           <div className="flex justify-between">
-            <span>Subtotal</span>
+            <span>Importe antes de descuento</span>
             <span>{formatMoney(sale.subtotal)}</span>
           </div>
           <div className="flex justify-between">
             <span>Descuento</span>
             <span>{formatMoney(sale.discount_total)}</span>
           </div>
+          <div className="flex justify-between border-t border-slate-200 pt-2">
+            <span>Operación gravada</span>
+            <span>{formatMoney(Number(sale.total) - Number(sale.tax_total))}</span>
+          </div>
           <div className="flex justify-between">
-            <span>IGV / impuesto</span>
+            <span>IGV incluido (18%)</span>
             <span>{formatMoney(sale.tax_total)}</span>
           </div>
           <div className="flex justify-between border-t border-slate-300 pt-2 text-lg font-bold">
@@ -489,6 +485,10 @@ function PaymentReceiptPrintView({ receipt }: { receipt: PaymentReceipt }) {
           <p>Pago registrado correctamente.</p>
           <p className="mt-1">Gracias por su compra.</p>
         </div>
+        <ReceiptQr
+          receiptToken={sale.receipt_token}
+          onReady={() => window.setTimeout(() => window.print(), 0)}
+        />
       </div>
     </section>
   );

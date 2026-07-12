@@ -11,6 +11,7 @@ from app.schemas.scanner_session import (
     ScannerScanResponse,
     ScannerSessionCreateResponse,
     ScannerSessionPollResponse,
+    ScannerSessionCreate,
 )
 from app.services.scanner_session_service import ScannerSessionService
 
@@ -23,12 +24,13 @@ router = APIRouter(prefix="/scanner-sessions", tags=["Scanner Sessions"])
     status_code=status.HTTP_201_CREATED,
 )
 def create_scanner_session(
+    payload: ScannerSessionCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles("ADMIN", "SELLER", "CASHIER")),
 ) -> ScannerSessionCreateResponse:
     service = ScannerSessionService(db)
 
-    return service.create_session(current_user)
+    return service.create_session(current_user, payload.purpose)
 
 
 @router.get("/{session_id}/scans", response_model=ScannerSessionPollResponse)

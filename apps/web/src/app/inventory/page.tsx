@@ -118,6 +118,8 @@ export default function InventoryPage() {
   const [quantity, setQuantity] = useState("1");
   const [reason, setReason] = useState<string>(movementConfig.ENTRADA.reason);
   const [historyVariantId, setHistoryVariantId] = useState("ALL");
+  const [historyType, setHistoryType] = useState("ALL");
+  const [historyDate, setHistoryDate] = useState("");
   const [activeTab, setActiveTab] =
     useState<(typeof inventoryTabs)[number]>("STOCK");
   const [isLoading, setIsLoading] = useState(true);
@@ -154,14 +156,16 @@ export default function InventoryPage() {
   }, [movementType, quantity, selectedVariant]);
 
   const filteredMovements = useMemo(() => {
-    if (historyVariantId === "ALL") {
-      return movements;
-    }
-
-    return movements.filter(
-      (movement) => movement.product_variant_id === historyVariantId,
-    );
-  }, [historyVariantId, movements]);
+    return movements.filter((movement) => {
+      const matchesVariant = historyVariantId === "ALL" ||
+        movement.product_variant_id === historyVariantId;
+      const matchesType = historyType === "ALL" ||
+        movement.movement_type === historyType;
+      const matchesDate = !historyDate ||
+        movement.created_at.slice(0, 10) === historyDate;
+      return matchesVariant && matchesType && matchesDate;
+    });
+  }, [historyDate, historyType, historyVariantId, movements]);
 
   const totalStock = useMemo(
     () =>
@@ -726,11 +730,12 @@ export default function InventoryPage() {
 
         {activeTab === "HISTORIAL" ? (
           <Card>
-          <CardHeader className="gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <CardHeader className="gap-4">
             <CardTitle className="flex items-center gap-2">
               <History className="h-5 w-5" />
               Historial de movimientos
             </CardTitle>
+            <div className="grid gap-3 sm:grid-cols-3">
             <select
               className="h-10 rounded-md border border-input bg-background px-3 text-sm"
               value={historyVariantId}
@@ -744,6 +749,9 @@ export default function InventoryPage() {
                 </option>
               ))}
             </select>
+            <select className="h-10 rounded-md border bg-white px-3 text-sm" value={historyType} onChange={(event) => setHistoryType(event.target.value)}><option value="ALL">Todos los movimientos</option><option value="ENTRADA">Entradas</option><option value="SALIDA">Salidas</option><option value="AJUSTE">Ajustes</option><option value="VENTA">Ventas</option><option value="DEVOLUCION">Devoluciones</option><option value="CAMBIO_SALIDA">Salidas por cambio</option></select>
+            <Input aria-label="Fecha del movimiento" type="date" value={historyDate} onChange={(event) => setHistoryDate(event.target.value)} />
+            </div>
           </CardHeader>
 
           <CardContent>

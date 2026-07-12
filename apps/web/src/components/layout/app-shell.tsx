@@ -15,6 +15,7 @@ import {
   Package,
   PackageSearch,
   ReceiptText,
+  RefreshCcw,
   ShoppingBag,
   ShoppingCart,
   Users,
@@ -59,6 +60,11 @@ const navigationItems = [
     label: "Ventas",
     href: "/sales",
     icon: ReceiptText,
+  },
+  {
+    label: "Cambios y devoluciones",
+    href: "/returns",
+    icon: RefreshCcw,
   },
   {
     label: "Productos",
@@ -215,11 +221,11 @@ export function AppShell({ title, description, children }: AppShellProps) {
 
       <Dialog open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
         <DialogContent
-          className="inset-y-0 left-0 h-[100dvh] max-h-none w-[min(88vw,20rem)] max-w-none -translate-x-0 -translate-y-0 content-start gap-0 overflow-hidden rounded-none p-0 lg:hidden"
+          className="inset-y-0 left-0 flex h-[100dvh] max-h-none w-[min(88vw,20rem)] max-w-none -translate-x-0 -translate-y-0 flex-col gap-0 overflow-hidden rounded-none bg-white p-0 lg:hidden"
           showCloseButton
         >
           <DialogTitle className="sr-only">Navegación principal</DialogTitle>
-          <div className="flex h-full min-h-0 flex-col bg-white">
+          <div className="flex min-h-0 w-full flex-1 flex-col bg-white">
             <div className="flex items-center gap-3 border-b px-4 pb-4 pt-[max(1rem,env(safe-area-inset-top))]">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-950 text-white">
                 <ShoppingBag className="h-5 w-5" />
