@@ -16,7 +16,6 @@ import { toast } from "sonner";
 import { AppShell } from "@/components/layout/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -223,71 +222,86 @@ export default function ProductCategoriesPage() {
           </Button>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+        <section>
+          <div className="mb-4">
+            <h2 className="flex items-center gap-2 text-base font-semibold text-slate-950">
               <FolderCog className="h-5 w-5" />
               Categorías del catálogo
-            </CardTitle>
-            <p className="text-sm text-slate-500">
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
               Las categorías inactivas se conservan en productos históricos, pero no se ofrecen al crear productos nuevos.
             </p>
-          </CardHeader>
-          <CardContent>
-            <div className="mb-4 grid gap-3 sm:grid-cols-[1fr_12rem]">
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <Input
-                  className="pl-9"
-                  placeholder="Buscar por nombre o descripción"
-                  value={searchTerm}
-                  onChange={(event) => setSearchTerm(event.target.value)}
-                />
-              </div>
-              <select
-                className="h-10 rounded-md border bg-white px-3 text-sm"
-                value={statusFilter}
-                onChange={(event) => setStatusFilter(event.target.value)}
-              >
-                <option value="ALL">Todos los estados</option>
-                <option value="ACTIVE">Activas</option>
-                <option value="INACTIVE">Inactivas</option>
-              </select>
-            </div>
+          </div>
 
-            {isLoading ? (
-              <LoadingState label="Cargando categorías..." rows={5} />
-            ) : filteredCategories.length === 0 ? (
-              <EmptyState
-                title={categories.length === 0 ? "Todavía no hay categorías" : "No se encontraron coincidencias"}
-                description={categories.length === 0 ? "Crea la primera categoría para comenzar a registrar productos." : "Prueba con otro nombre o estado."}
+          <div className="mb-4 grid gap-3 rounded-lg border bg-white p-3 sm:grid-cols-[1fr_12rem]">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Input
+                className="pl-9"
+                placeholder="Buscar por nombre o descripción"
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
               />
-            ) : (
-              <div className="space-y-3">
-                {filteredCategories.map((category) => (
-                  <article
-                    key={category.id}
-                    className="grid gap-4 rounded-lg border bg-white p-4 sm:grid-cols-[1fr_auto] sm:items-center"
-                  >
+            </div>
+            <select
+              className="h-10 w-full rounded-md border bg-white px-3 text-sm"
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.target.value)}
+            >
+              <option value="ALL">Todos los estados</option>
+              <option value="ACTIVE">Activas</option>
+              <option value="INACTIVE">Inactivas</option>
+            </select>
+          </div>
+
+          {isLoading ? (
+            <LoadingState label="Cargando categorías..." rows={5} />
+          ) : filteredCategories.length === 0 ? (
+            <EmptyState
+              title={categories.length === 0 ? "Todavía no hay categorías" : "No se encontraron coincidencias"}
+              description={categories.length === 0 ? "Crea la primera categoría para comenzar a registrar productos." : "Prueba con otro nombre o estado."}
+            />
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {filteredCategories.map((category) => (
+                <article
+                  key={category.id}
+                  className="flex min-h-56 flex-col rounded-lg border bg-white p-4 shadow-sm"
+                >
+                  <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h2 className="font-semibold text-slate-950">{category.name}</h2>
-                        <Badge variant={category.is_active ? "default" : "outline"}>
-                          {category.is_active ? "Activa" : "Inactiva"}
-                        </Badge>
-                      </div>
-                      <p className="mt-1 text-sm text-slate-500">
-                        {category.description || "Sin descripción registrada."}
+                      <p className="text-xs font-medium uppercase text-slate-400">
+                        Categoría
                       </p>
-                      <p className="mt-2 text-xs font-medium text-slate-600">
-                        {category.product_count} producto{category.product_count === 1 ? "" : "s"} asociado{category.product_count === 1 ? "" : "s"}
-                      </p>
+                      <h3 className="mt-1 break-words text-base font-semibold text-slate-950">
+                        {category.name}
+                      </h3>
                     </div>
-                    <div className="flex items-center justify-between gap-3 sm:justify-end">
-                      <Button variant="outline" size="sm" type="button" onClick={() => openEdit(category)}>
-                        <Pencil className="h-3.5 w-3.5" />
-                        Editar
-                      </Button>
+                    <Badge className="shrink-0" variant={category.is_active ? "default" : "outline"}>
+                      {category.is_active ? "Activa" : "Inactiva"}
+                    </Badge>
+                  </div>
+
+                  <p className="mt-3 line-clamp-3 min-h-15 text-sm leading-5 text-slate-500">
+                    {category.description || "Sin descripción registrada."}
+                  </p>
+
+                  <div className="mt-4 border-y bg-slate-50 px-3 py-2.5">
+                    <p className="text-xs text-slate-500">Productos asociados</p>
+                    <p className="mt-0.5 text-lg font-bold text-slate-950">
+                      {category.product_count}
+                    </p>
+                  </div>
+
+                  <div className="mt-auto flex items-center justify-between gap-3 pt-4">
+                    <Button variant="outline" size="sm" type="button" onClick={() => openEdit(category)}>
+                      <Pencil className="h-3.5 w-3.5" />
+                      Editar
+                    </Button>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-medium text-slate-500">
+                        Disponible
+                      </span>
                       <button
                         aria-checked={category.is_active}
                         aria-label={category.is_active ? `Desactivar ${category.name}` : `Activar ${category.name}`}
@@ -299,12 +313,12 @@ export default function ProductCategoriesPage() {
                         <span className={`absolute top-1 h-4 w-4 rounded-full bg-white transition ${category.is_active ? "left-6" : "left-1"}`} />
                       </button>
                     </div>
-                  </article>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
       </div>
 
       <CategoryFormDialog
