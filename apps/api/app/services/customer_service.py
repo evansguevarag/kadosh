@@ -99,6 +99,7 @@ class CustomerService:
         document_number = payload.document_number.strip()
 
         self._validate_document(document_type, document_number)
+        self._validate_contact(payload.phone, payload.email)
 
         existing_customer = self.customer_repository.find_by_document(
             document_type=document_type,
@@ -170,6 +171,8 @@ class CustomerService:
         if "is_active" in update_data and update_data["is_active"] is not None:
             customer.is_active = update_data["is_active"]
 
+        self._validate_contact(customer.phone, customer.email)
+
         return self.customer_repository.update(customer)
 
     def _validate_document(self, document_type: str, document_number: str) -> None:
@@ -195,4 +198,25 @@ class CustomerService:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="El RUC debe tener exactamente 11 dígitos.",
+            )
+
+    def _validate_contact(self, phone: str | None, email: object | None) -> None:
+        """Valida los datos de contacto opcionales del cliente."""
+
+        normalized_phone = phone.strip() if phone else ""
+
+        if normalized_phone and (
+            not normalized_phone.isdigit() or len(normalized_phone) != 9
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="El número de celular debe tener exactamente 9 dígitos.",
+            )
+
+        normalized_email = str(email).strip() if email else ""
+
+        if normalized_email and "@" not in normalized_email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="El correo electrónico debe incluir @.",
             )

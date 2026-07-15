@@ -47,7 +47,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useAuth } from "@/features/auth/use-auth";
-import { customerService } from "@/features/customers/customer-service";
+import {
+  customerService,
+  isValidDni,
+  isValidEmail,
+  isValidPeruvianPhone,
+} from "@/features/customers/customer-service";
 import type { CustomerDisplayDevice } from "@/features/payments/customer-display-device-service";
 import { paymentService } from "@/features/payments/payment-service";
 import {
@@ -972,7 +977,7 @@ export default function PosPage() {
 
     const normalizedDni = customerDocumentNumber.trim();
 
-    if (!/^\d{8}$/.test(normalizedDni)) {
+    if (!isValidDni(normalizedDni)) {
       toast.error("Ingresa un DNI válido de 8 dígitos.");
 
       return;
@@ -1041,8 +1046,14 @@ export default function PosPage() {
     const normalizedEmail = customerReceiptEmail.trim().toLowerCase();
     const normalizedPhone = customerReceiptPhone.replace(/\s/g, "").trim();
 
-    if (normalizedEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
-      toast.error("Ingresa un correo válido.");
+    if (normalizedPhone && !isValidPeruvianPhone(normalizedPhone)) {
+      toast.error("El número de celular debe tener exactamente 9 dígitos.");
+
+      return;
+    }
+
+    if (normalizedEmail && !isValidEmail(normalizedEmail)) {
+      toast.error("Ingresa un correo válido que incluya @.");
 
       return;
     }
@@ -1627,6 +1638,7 @@ export default function PosPage() {
                     id="customerDocumentNumber"
                     inputMode="numeric"
                     maxLength={8}
+                    pattern="[0-9]{8}"
                     placeholder="DNI opcional"
                     value={customerDocumentNumber}
                     disabled={isLoading || isSaleFlowBusy || isFindingCustomer}
@@ -1703,6 +1715,9 @@ export default function PosPage() {
                             setCustomerReceiptEmail(event.target.value)
                           }
                         />
+                        <p className="text-xs text-slate-500">
+                          Debe incluir @, por ejemplo cliente@correo.com.
+                        </p>
                       </div>
 
                       <div className="space-y-1.5">
@@ -1710,18 +1725,25 @@ export default function PosPage() {
                           className="text-xs text-slate-600"
                           htmlFor="customerReceiptPhone"
                         >
-                          Teléfono opcional
+                          Celular opcional
                         </Label>
                         <Input
                           id="customerReceiptPhone"
-                          inputMode="tel"
+                          inputMode="numeric"
+                          maxLength={9}
+                          pattern="[0-9]{9}"
                           placeholder="924454127"
                           value={customerReceiptPhone}
                           disabled={isSaleFlowBusy || isUpdatingCustomerContact}
-                          onChange={(event) =>
-                            setCustomerReceiptPhone(event.target.value)
-                          }
+                          onChange={(event) => {
+                            setCustomerReceiptPhone(
+                              event.target.value.replace(/\D/g, "").slice(0, 9),
+                            );
+                          }}
                         />
+                        <p className="text-xs text-slate-500">
+                          Ingresa exactamente 9 dígitos.
+                        </p>
                       </div>
                     </div>
 

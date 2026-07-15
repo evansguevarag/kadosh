@@ -19,8 +19,24 @@ export type CustomerResolveDniResponse = {
   source: "LOCAL_DB" | "APIPERU_CREATED" | string;
 };
 
+export function isValidDni(value: string): boolean {
+  return /^\d{8}$/.test(value.trim());
+}
+
+export function isValidPeruvianPhone(value: string): boolean {
+  return /^\d{9}$/.test(value.trim());
+}
+
+export function isValidEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
 export const customerService = {
   lookupDni(dni: string, token: string): Promise<DniLookupResponse> {
+    if (!isValidDni(dni)) {
+      return Promise.reject(new Error("El DNI debe tener exactamente 8 dígitos."));
+    }
+
     return apiClient.get<DniLookupResponse>(`/document-lookup/dni/${dni}`, {
       token,
     });
@@ -59,6 +75,10 @@ export const customerService = {
   },
 
   resolveDni(dni: string, token: string): Promise<CustomerResolveDniResponse> {
+    if (!isValidDni(dni)) {
+      return Promise.reject(new Error("El DNI debe tener exactamente 8 dígitos."));
+    }
+
     return apiClient.post<CustomerResolveDniResponse, Record<string, never>>(
       `/customers/resolve-dni/${dni}`,
       {},
