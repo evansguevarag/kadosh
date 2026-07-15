@@ -6,7 +6,12 @@ from sqlalchemy.orm import Session
 from app.api.v1.dependencies import get_db
 from app.api.v1.security import require_roles
 from app.models.user import User
-from app.schemas.category import CategoryCreate, CategoryResponse, CategoryUpdate
+from app.schemas.category import (
+    CategoryCreate,
+    CategoryManagementResponse,
+    CategoryResponse,
+    CategoryUpdate,
+)
 from app.services.category_service import CategoryService
 
 router = APIRouter(prefix="/categories", tags=["Categories"])
@@ -20,6 +25,16 @@ def list_categories(
     service = CategoryService(db)
 
     return service.list_active_categories()
+
+
+@router.get("/manage", response_model=list[CategoryManagementResponse])
+def list_categories_for_management(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("ADMIN")),
+) -> list[CategoryManagementResponse]:
+    service = CategoryService(db)
+
+    return service.list_categories_for_management()
 
 
 @router.get("/{category_id}", response_model=CategoryResponse)

@@ -5,7 +5,11 @@ from sqlalchemy.orm import Session
 
 from app.models.category import Category
 from app.repositories.category_repository import CategoryRepository
-from app.schemas.category import CategoryCreate, CategoryUpdate
+from app.schemas.category import (
+    CategoryCreate,
+    CategoryManagementResponse,
+    CategoryUpdate,
+)
 
 
 class CategoryService:
@@ -18,6 +22,24 @@ class CategoryService:
         """Lista categorías activas."""
 
         return self.repository.find_all_active()
+
+    def list_categories_for_management(self) -> list[CategoryManagementResponse]:
+        """Lista todas las categorías con información de uso administrativo."""
+
+        return [
+            CategoryManagementResponse.model_validate(
+                {
+                    "id": category.id,
+                    "name": category.name,
+                    "description": category.description,
+                    "is_active": category.is_active,
+                    "created_at": category.created_at,
+                    "updated_at": category.updated_at,
+                    "product_count": product_count,
+                },
+            )
+            for category, product_count in self.repository.find_all_with_product_count()
+        ]
 
     def get_category_by_id(self, category_id: UUID) -> Category:
         """Obtiene una categoría por ID o lanza error controlado."""

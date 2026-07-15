@@ -50,6 +50,10 @@ export type Category = {
   updated_at: string;
 };
 
+export type ManagedCategory = Category & {
+  product_count: number;
+};
+
 export type Product = {
   id: string;
   category_id: string;

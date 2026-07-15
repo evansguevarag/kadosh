@@ -1,5 +1,14 @@
 import { apiClient } from "@/services/api-client";
-import type { Category, Product } from "@/types/api";
+import type { Category, ManagedCategory, Product } from "@/types/api";
+
+export type CategoryCreateRequest = {
+  name: string;
+  description?: string | null;
+};
+
+export type CategoryUpdateRequest = Partial<CategoryCreateRequest> & {
+  is_active?: boolean;
+};
 
 export type ProductCreateRequest = {
   category_id: string;
@@ -18,6 +27,33 @@ export const productService = {
     return apiClient.get<Category[]>("/categories", {
       token,
     });
+  },
+
+  listManagedCategories(token: string): Promise<ManagedCategory[]> {
+    return apiClient.get<ManagedCategory[]>("/categories/manage", { token });
+  },
+
+  createCategory(
+    payload: CategoryCreateRequest,
+    token: string,
+  ): Promise<Category> {
+    return apiClient.post<Category, CategoryCreateRequest>(
+      "/categories",
+      payload,
+      { token },
+    );
+  },
+
+  updateCategory(
+    categoryId: string,
+    payload: CategoryUpdateRequest,
+    token: string,
+  ): Promise<Category> {
+    return apiClient.patch<Category, CategoryUpdateRequest>(
+      `/categories/${categoryId}`,
+      payload,
+      { token },
+    );
   },
 
   listProducts(token: string): Promise<Product[]> {

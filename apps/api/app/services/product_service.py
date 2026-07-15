@@ -80,7 +80,9 @@ class ProductService:
         if "category_id" in update_data and update_data["category_id"] is not None:
             category = self.category_repository.find_by_id(update_data["category_id"])
 
-            if category is None or not category.is_active:
+            if category is None or (
+                not category.is_active and category.id != product.category_id
+            ):
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="La categoría seleccionada no existe o no está activa.",

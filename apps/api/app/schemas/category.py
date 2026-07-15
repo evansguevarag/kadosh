@@ -14,6 +14,7 @@ class CategoryBase(BaseModel):
     )
     description: str | None = Field(
         default=None,
+        max_length=300,
         examples=["Prendas superiores urbanas."],
     )
 
@@ -33,6 +34,7 @@ class CategoryUpdate(BaseModel):
     )
     description: str | None = Field(
         default=None,
+        max_length=300,
         examples=["Casacas y chaquetas urbanas."],
     )
     is_active: bool | None = None
@@ -47,3 +49,9 @@ class CategoryResponse(CategoryBase):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class CategoryManagementResponse(CategoryResponse):
+    """Categoría con información adicional para administración."""
+
+    product_count: int

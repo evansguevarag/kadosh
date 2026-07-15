@@ -184,10 +184,10 @@ export default function SaleDetailPage() {
                 <CardContent className="space-y-2 text-sm">
                   <InfoRow label="Nombre" value={formatCustomerName(sale)} />
                   <InfoRow
-                    label="Documento"
+                    label="DNI"
                     value={
                       sale.customer?.document_number
-                        ? `${sale.customer.document_type} ${sale.customer.document_number}`
+                        ? sale.customer.document_number
                         : "-"
                     }
                   />

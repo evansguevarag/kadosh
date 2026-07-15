@@ -1,8 +1,9 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Loader2, Package, Pencil, Plus } from "lucide-react";
+import { FolderCog, Loader2, Package, Pencil, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/layout/app-shell";
@@ -23,6 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/features/auth/use-auth";
 import {
   productService,
@@ -30,12 +32,15 @@ import {
   type ProductUpdateRequest,
 } from "@/features/products/product-service";
 import { statusBadgeVariant } from "@/lib/status-format";
+import { cn } from "@/lib/utils";
+import { buttonVariants } from "@/components/ui/button";
 import { ApiClientError } from "@/services/api-client";
 import type { Category, Product } from "@/types/api";
 
 export default function ProductsPage() {
   const router = useRouter();
-  const { token, isAuthenticated } = useAuth();
+  const { token, isAuthenticated, user } = useAuth();
+  const isAdmin = user?.role === "ADMIN" || user?.role_name === "ADMIN";
 
   const [products, setProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -53,9 +58,17 @@ export default function ProductsPage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isQuickCategoryOpen, setIsQuickCategoryOpen] = useState(false);
+  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
+  const [quickCategoryName, setQuickCategoryName] = useState("");
+  const [quickCategoryDescription, setQuickCategoryDescription] = useState("");
   const [isUpdatingProduct, setIsUpdatingProduct] = useState(false);
   const [updatingProductId, setUpdatingProductId] = useState<string | null>(
     null,
+  );
+  const activeCategories = useMemo(
+    () => categories.filter((category) => category.is_active),
+    [categories],
   );
   const filteredProducts = useMemo(() => {
     const search = searchTerm.trim().toLowerCase();
@@ -78,16 +91,22 @@ export default function ProductsPage() {
       setIsLoading(true);
 
       const [categoriesResponse, productsResponse] = await Promise.all([
-        productService.listCategories(token),
+        isAdmin
+          ? productService.listManagedCategories(token)
+          : productService.listCategories(token),
         productService.listProducts(token),
       ]);
 
       setCategories(categoriesResponse);
       setProducts(productsResponse);
 
-      if (categoriesResponse.length > 0) {
+      const firstActiveCategory = categoriesResponse.find(
+        (category) => category.is_active,
+      );
+
+      if (firstActiveCategory) {
         setCategoryId((currentCategoryId) =>
-          currentCategoryId || categoriesResponse[0].id,
+          currentCategoryId || firstActiveCategory.id,
         );
       }
     } catch (error) {
@@ -100,7 +119,7 @@ export default function ProductsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [token]);
+  }, [isAdmin, token]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -123,6 +142,12 @@ export default function ProductsPage() {
 
     if (!token) {
       toast.error("Debes iniciar sesión nuevamente.");
+
+      return;
+    }
+
+    if (isQuickCategoryOpen) {
+      await handleQuickCategorySubmit();
 
       return;
     }
@@ -161,6 +186,46 @@ export default function ProductsPage() {
       toast.error(message);
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  function closeQuickCategoryForm() {
+    setIsQuickCategoryOpen(false);
+    setQuickCategoryName("");
+    setQuickCategoryDescription("");
+  }
+
+  async function handleQuickCategorySubmit() {
+    if (!token || !quickCategoryName.trim()) {
+      return;
+    }
+
+    try {
+      setIsCreatingCategory(true);
+      const createdCategory = await productService.createCategory(
+        {
+          name: quickCategoryName.trim(),
+          description: quickCategoryDescription.trim() || null,
+        },
+        token,
+      );
+
+      setCategories((currentCategories) =>
+        [...currentCategories, createdCategory].sort((left, right) =>
+          left.name.localeCompare(right.name, "es"),
+        ),
+      );
+      setCategoryId(createdCategory.id);
+      closeQuickCategoryForm();
+      toast.success("Categoría creada y seleccionada.");
+    } catch (error) {
+      toast.error(
+        error instanceof ApiClientError
+          ? error.message
+          : "No se pudo crear la categoría.",
+      );
+    } finally {
+      setIsCreatingCategory(false);
     }
   }
 
@@ -287,10 +352,21 @@ export default function ProductsPage() {
             </p>
           </div>
 
-          <Button type="button" onClick={() => setIsCreateDialogOpen(true)}>
-            <Plus className="h-4 w-4" />
-            Nuevo producto
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            {isAdmin ? (
+              <Link
+                className={cn(buttonVariants({ variant: "outline" }))}
+                href="/products/categories"
+              >
+                <FolderCog className="h-4 w-4" />
+                Gestionar categorías
+              </Link>
+            ) : null}
+            <Button type="button" onClick={() => setIsCreateDialogOpen(true)}>
+              <Plus className="h-4 w-4" />
+              Nuevo producto
+            </Button>
+          </div>
         </CardHeader>
 
         <CardContent>
@@ -323,7 +399,13 @@ export default function ProductsPage() {
         </CardContent>
       </Card>
 
-      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+      <Dialog
+        open={isCreateDialogOpen}
+        onOpenChange={(open) => {
+          setIsCreateDialogOpen(open);
+          if (!open) closeQuickCategoryForm();
+        }}
+      >
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Nuevo producto</DialogTitle>
@@ -331,22 +413,126 @@ export default function ProductsPage() {
 
           <form className="space-y-5" onSubmit={handleSubmit}>
             <div className="space-y-2">
-              <Label htmlFor="category">Categoría</Label>
+              <div className="flex items-center justify-between gap-3">
+                <Label htmlFor="category">Categoría</Label>
+                {isAdmin && !isQuickCategoryOpen ? (
+                  <Button
+                    className="h-auto px-0 py-0 text-xs"
+                    type="button"
+                    variant="link"
+                    disabled={isSubmitting}
+                    onClick={() => setIsQuickCategoryOpen(true)}
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Crear categoría
+                  </Button>
+                ) : null}
+              </div>
               <select
                 id="category"
                 className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
                 value={categoryId}
-                disabled={isSubmitting || categories.length === 0}
+                disabled={
+                  isSubmitting ||
+                  isCreatingCategory ||
+                  activeCategories.length === 0
+                }
                 onChange={(event) => setCategoryId(event.target.value)}
                 required
               >
-                {categories.map((category) => (
+                {activeCategories.length === 0 ? (
+                  <option value="">No hay categorías disponibles</option>
+                ) : null}
+                {activeCategories.map((category) => (
                   <option key={category.id} value={category.id}>
                     {category.name}
                   </option>
                 ))}
               </select>
             </div>
+
+            {isQuickCategoryOpen ? (
+              <div className="rounded-lg border bg-slate-50 p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold">Nueva categoría</p>
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      Se seleccionará automáticamente al crearla.
+                    </p>
+                  </div>
+                  <Button
+                    aria-label="Cerrar creación de categoría"
+                    size="icon-sm"
+                    type="button"
+                    variant="ghost"
+                    disabled={isCreatingCategory}
+                    onClick={closeQuickCategoryForm}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="mt-3 space-y-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="quickCategoryName">Nombre</Label>
+                    <Input
+                      id="quickCategoryName"
+                      maxLength={100}
+                      placeholder="Ej. Camisas"
+                      value={quickCategoryName}
+                      disabled={isCreatingCategory}
+                      onChange={(event) =>
+                        setQuickCategoryName(event.target.value)
+                      }
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="quickCategoryDescription">
+                      Descripción{" "}
+                      <span className="font-normal text-slate-400">
+                        (opcional)
+                      </span>
+                    </Label>
+                    <Textarea
+                      id="quickCategoryDescription"
+                      className="min-h-18"
+                      maxLength={300}
+                      placeholder="Qué productos pertenecen a esta categoría."
+                      value={quickCategoryDescription}
+                      disabled={isCreatingCategory}
+                      onChange={(event) =>
+                        setQuickCategoryDescription(event.target.value)
+                      }
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                      disabled={isCreatingCategory}
+                      onClick={closeQuickCategoryForm}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      size="sm"
+                      type="button"
+                      disabled={
+                        isCreatingCategory || !quickCategoryName.trim()
+                      }
+                      onClick={() => void handleQuickCategorySubmit()}
+                    >
+                      {isCreatingCategory ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Plus className="h-4 w-4" />
+                      )}
+                      Crear y seleccionar
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ) : null}
 
             <div className="space-y-2">
               <Label htmlFor="name">Nombre</Label>
@@ -391,7 +577,12 @@ export default function ProductsPage() {
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button
+                type="submit"
+                disabled={
+                  isSubmitting || isCreatingCategory || isQuickCategoryOpen
+                }
+              >
                 {isSubmitting ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -432,7 +623,7 @@ export default function ProductsPage() {
               >
                 {categories.map((category) => (
                   <option key={category.id} value={category.id}>
-                    {category.name}
+                    {category.name}{category.is_active ? "" : " (Inactiva)"}
                   </option>
                 ))}
               </select>
