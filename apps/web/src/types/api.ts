@@ -153,6 +153,18 @@ export type ReturnTransaction = {
   replacement_value: string;
   difference_amount: string;
   settlement_method: string | null;
+  settlement: {
+    id: string;
+    direction: "CHARGE" | "REFUND" | "NONE";
+    method: string | null;
+    amount: string;
+    currency: string;
+    status: "SETTLED" | "PENDING" | "FAILED" | "CANCELLED";
+    operation_reference: string | null;
+    settled_at: string | null;
+    created_at: string;
+    updated_at: string;
+  } | null;
   notes: string | null;
   status: string;
   created_at: string;
@@ -197,7 +209,7 @@ export type Payment = {
 
 export type PaymentSession = {
   id: string;
-  sale_id: string;
+  sale_id: string | null;
   payment_id: string | null;
   seller_id: string;
   device_id: string;
@@ -213,6 +225,7 @@ export type PaymentSession = {
   cancelled_at: string | null;
   created_at: string;
   updated_at: string;
+  context_type?: "SALE" | "RETURN_DIFFERENCE";
   sale?: {
     sale_number: string;
     subtotal: string;
@@ -229,6 +242,18 @@ export type PaymentSession = {
       unit_price: string;
       discount_amount: string;
       subtotal: string;
+    }>;
+  };
+  return_difference?: {
+    return_number: string;
+    original_sale_number: string;
+    returned_value: string;
+    replacement_value: string;
+    difference_amount: string;
+    replacements: Array<{
+      product_name: string;
+      variant_sku: string;
+      quantity: number;
     }>;
   };
 };

@@ -3,7 +3,7 @@ export function formatSaleStatus(status: string) {
     CANCELLED: "Cancelada",
     DRAFT: "Borrador",
     PAID: "Pagada",
-    PENDING_PAYMENT: "Pendiente de pago",
+    PENDING_PAYMENT: "Esperando pago en tablet",
   };
 
   return labels[status] ?? formatStatus(status);

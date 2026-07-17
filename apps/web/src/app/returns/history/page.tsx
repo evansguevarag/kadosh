@@ -7,7 +7,7 @@ import { toast } from "sonner";
 
 import { AppShell } from "@/components/layout/app-shell";
 import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/features/auth/use-auth";
@@ -40,6 +40,21 @@ export default function ReturnsHistoryPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState("ALL");
   const [isLoading, setIsLoading] = useState(true);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+
+  async function cancelPending(transactionId: string) {
+    if (!token) return;
+    try {
+      setCancellingId(transactionId);
+      await returnService.cancel(transactionId, token);
+      toast.success("Cambio pendiente cancelado y reserva liberada.");
+      await loadData();
+    } catch (error) {
+      toast.error(error instanceof ApiClientError ? error.message : "No se pudo cancelar el cambio.");
+    } finally {
+      setCancellingId(null);
+    }
+  }
 
   const salesById = useMemo(() => new Map(sales.map((sale) => [sale.id, sale])), [sales]);
   const filteredTransactions = useMemo(() => {
@@ -91,7 +106,54 @@ export default function ReturnsHistoryPage() {
               const sale = salesById.get(transaction.original_sale_id);
               const originalItems = new Map(sale?.items.map((item) => [item.id, item]));
               const difference = Number(transaction.difference_amount);
-              return <div className="rounded-lg border bg-white p-4" key={transaction.id}><div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><div className="flex flex-wrap items-center gap-2"><p className="font-bold">{transaction.return_number}</p><Badge>{transaction.transaction_type === "EXCHANGE" ? "Cambio" : "Devolución"}</Badge></div><p className="mt-2 text-sm text-slate-700">Venta {sale?.sale_number || "-"} · {customerName(sale)}</p><p className="mt-1 text-xs text-slate-500">{sale?.customer?.document_number || "Sin documento"} · {new Date(transaction.created_at).toLocaleString("es-PE")}</p></div><div className="text-left sm:text-right"><p className="text-xs text-slate-500">{difference > 0 ? "Cobrado al cliente" : difference < 0 ? "Devuelto al cliente" : "Sin diferencia"}</p><p className="mt-1 text-lg font-bold">{money(Math.abs(difference))}</p><p className="text-xs text-slate-500">{transaction.settlement_method || "-"}</p></div></div><div className="mt-4 grid gap-3 border-t pt-4 md:grid-cols-2"><div><p className="text-xs font-semibold uppercase text-slate-500">Productos recibidos</p>{transaction.items.map((item) => { const original = originalItems.get(item.sale_item_id); return <p className="mt-2 text-sm" key={item.id}>{item.quantity} × {original?.product_name || "Producto"} <span className="text-slate-500">{original?.variant_sku}</span></p>; })}</div><div><p className="text-xs font-semibold uppercase text-slate-500">Solución</p><p className="mt-2 text-sm">{resolutionLabels[transaction.inventory_resolution] || transaction.inventory_resolution}</p>{transaction.replacements.map((item) => <p className="mt-2 text-sm" key={item.id}>{item.quantity} × {item.product_name} <span className="text-slate-500">{item.variant_sku}</span></p>)}</div></div></div>;
+              return (
+                <div className="rounded-lg border bg-white p-4" key={transaction.id}>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-bold">{transaction.return_number}</p>
+                        <Badge>{transaction.transaction_type === "EXCHANGE" ? "Cambio" : "Devolución"}</Badge>
+                        {transaction.status === "PENDING_PAYMENT" ? <Badge variant="outline">Esperando pago en tablet</Badge> : null}
+                        {transaction.settlement ? <Badge variant="outline">{transaction.settlement.status === "SETTLED" ? "Liquidado" : transaction.settlement.status}</Badge> : null}
+                      </div>
+                      <p className="mt-2 text-sm text-slate-700">Venta {sale?.sale_number || "-"} · {customerName(sale)}</p>
+                      <p className="mt-1 text-xs text-slate-500">{sale?.customer?.document_number || "Sin documento"} · {new Date(transaction.created_at).toLocaleString("es-PE")}</p>
+                    </div>
+                    <div className="text-left sm:text-right">
+                      <p className="text-xs text-slate-500">{difference > 0 ? "Cobrado al cliente" : difference < 0 ? "Devuelto al cliente" : "Sin diferencia"}</p>
+                      <p className="mt-1 text-lg font-bold">{money(transaction.settlement?.amount ?? Math.abs(difference))}</p>
+                      <p className="text-xs text-slate-500">{transaction.settlement?.method || transaction.settlement_method || "-"}</p>
+                      {transaction.settlement?.operation_reference ? <p className="mt-1 text-xs text-slate-500">Ref. {transaction.settlement.operation_reference}</p> : null}
+                      {transaction.status === "PENDING_PAYMENT" ? (
+                        <Button
+                          className="mt-3"
+                          disabled={cancellingId === transaction.id}
+                          size="sm"
+                          variant="outline"
+                          onClick={() => void cancelPending(transaction.id)}
+                        >
+                          {cancellingId === transaction.id ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                          Cancelar cobro
+                        </Button>
+                      ) : null}
+                    </div>
+                  </div>
+                  <div className="mt-4 grid gap-3 border-t pt-4 md:grid-cols-2">
+                    <div>
+                      <p className="text-xs font-semibold uppercase text-slate-500">Productos recibidos</p>
+                      {transaction.items.map((item) => {
+                        const original = originalItems.get(item.sale_item_id);
+                        return <p className="mt-2 text-sm" key={item.id}>{item.quantity} × {original?.product_name || "Producto"} <span className="text-slate-500">{original?.variant_sku}</span></p>;
+                      })}
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold uppercase text-slate-500">Solución</p>
+                      <p className="mt-2 text-sm">{resolutionLabels[transaction.inventory_resolution] || transaction.inventory_resolution}</p>
+                      {transaction.replacements.map((item) => <p className="mt-2 text-sm" key={item.id}>{item.quantity} × {item.product_name} <span className="text-slate-500">{item.variant_sku}</span></p>)}
+                    </div>
+                  </div>
+                </div>
+              );
             })}</div>}
           </CardContent>
         </Card>

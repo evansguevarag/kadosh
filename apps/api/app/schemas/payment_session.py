@@ -97,4 +97,44 @@ class CustomerDisplaySaleResponse(BaseModel):
 class CustomerDisplayPaymentSessionResponse(PaymentSessionResponse):
     """Sesión de pago enriquecida con la compra enviada a la tablet."""
 
-    sale: CustomerDisplaySaleResponse
+    context_type: str = "SALE"
+    sale: CustomerDisplaySaleResponse | None = None
+    return_difference: "CustomerDisplayReturnDifferenceResponse | None" = None
+
+
+class CustomerDisplayReturnItemResponse(BaseModel):
+    product_name: str
+    variant_sku: str
+    quantity: int
+
+
+class CustomerDisplayReturnDifferenceResponse(BaseModel):
+    return_number: str
+    original_sale_number: str
+    returned_value: Decimal
+    replacement_value: Decimal
+    difference_amount: Decimal
+    replacements: list[CustomerDisplayReturnItemResponse]
+
+
+class CustomerDisplayReturnSessionResponse(BaseModel):
+    id: UUID
+    sale_id: UUID | None = None
+    payment_id: UUID | None = None
+    seller_id: UUID
+    device_id: str
+    status: str
+    amount: Decimal
+    currency: str = "PEN"
+    customer_message: str | None = None
+    receipt_email: str | None = None
+    expires_at: datetime
+    viewed_at: datetime | None
+    processing_at: datetime | None
+    completed_at: datetime | None
+    cancelled_at: datetime | None
+    created_at: datetime
+    updated_at: datetime
+    context_type: str = "RETURN_DIFFERENCE"
+    sale: CustomerDisplaySaleResponse | None = None
+    return_difference: CustomerDisplayReturnDifferenceResponse

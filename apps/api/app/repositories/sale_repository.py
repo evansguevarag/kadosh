@@ -12,13 +12,15 @@ class SaleRepository:
     def __init__(self, db: Session) -> None:
         self.db = db
 
-    def find_all(self) -> list[Sale]:
+    def find_all(self, *, limit: int = 100, offset: int = 0) -> list[Sale]:
         """Obtiene todas las ventas con sus items."""
 
         statement = (
             select(Sale)
             .options(selectinload(Sale.items), selectinload(Sale.customer))
             .order_by(Sale.created_at.desc())
+            .offset(offset)
+            .limit(limit)
         )
 
         return list(self.db.scalars(statement).all())
@@ -30,6 +32,18 @@ class SaleRepository:
             select(Sale)
             .options(selectinload(Sale.items), selectinload(Sale.customer))
             .where(Sale.id == sale_id)
+        )
+
+        return self.db.scalar(statement)
+
+    def find_by_id_for_update(self, sale_id: UUID) -> Sale | None:
+        """Obtiene y bloquea una venta durante una operacion financiera."""
+
+        statement = (
+            select(Sale)
+            .options(selectinload(Sale.items), selectinload(Sale.customer))
+            .where(Sale.id == sale_id)
+            .with_for_update()
         )
 
         return self.db.scalar(statement)

@@ -30,6 +30,19 @@ class PaymentSessionRepository:
 
         return self.db.scalar(statement)
 
+    def find_by_id_for_update(
+        self, payment_session_id: UUID
+    ) -> PaymentSession | None:
+        """Bloquea una sesion mientras se confirma un resultado de pago."""
+
+        statement = (
+            select(PaymentSession)
+            .where(PaymentSession.id == payment_session_id)
+            .with_for_update()
+        )
+
+        return self.db.scalar(statement)
+
     def find_by_sale_id(self, sale_id: UUID) -> list[PaymentSession]:
         """Obtiene las sesiones de pago asociadas a una venta."""
 

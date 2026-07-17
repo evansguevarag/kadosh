@@ -1,6 +1,8 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 
+from app.api.v1.security import require_roles
 from app.db.session import check_database_connection
+from app.models.user import User
 from app.services.system_service import get_database_status
 
 router = APIRouter(prefix="/system", tags=["System"])
@@ -26,7 +28,9 @@ def ping_database() -> dict[str, str]:
 
 
 @router.get("/database-status")
-def database_status() -> dict[str, object]:
+def database_status(
+    current_user: User = Depends(require_roles("ADMIN")),
+) -> dict[str, object]:
     try:
         return get_database_status()
     except Exception as exc:

@@ -244,7 +244,6 @@ export default function ReportsPage() {
       ["Indicador", "Valor"],
       ["Ventas registradas", filteredSales.length],
       ["Ventas pagadas", paidSales.length],
-      ["Ventas pendientes", dashboard.sales_summary.pending_sales],
       ["Ventas canceladas", dashboard.sales_summary.cancelled_sales],
       ["Ingresos cobrados", revenue.toFixed(2)],
       ["Ticket promedio", averageTicket.toFixed(2)],

@@ -87,15 +87,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           status: "authenticated",
         });
       })
-      .catch(() => {
+      .catch(async () => {
         if (!isActive) return;
 
-        authService.logout();
-        setAuthState({
-          user: null,
-          token: null,
-          status: "unauthenticated",
-        });
+        try {
+          const refreshed = await authService.refreshSession();
+          if (!isActive) return;
+          setAuthState({
+            user: refreshed.user,
+            token: refreshed.access_token,
+            status: "authenticated",
+          });
+        } catch {
+          authService.logout();
+          setAuthState({
+            user: null,
+            token: null,
+            status: "unauthenticated",
+          });
+        }
       });
 
     return () => {

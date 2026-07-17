@@ -13,6 +13,7 @@ from app.schemas.auth import (
     PasswordResetRequest,
     PasswordResetResponse,
     PasswordResetVerifyRequest,
+    RefreshTokenRequest,
     TokenResponse,
 )
 from app.services.auth_service import AuthService
@@ -42,6 +43,14 @@ def login(
     service = AuthService(db)
 
     return service.login(payload)
+
+
+@router.post("/refresh", response_model=TokenResponse)
+def refresh_session(
+    payload: RefreshTokenRequest,
+    db: Session = Depends(get_db),
+) -> TokenResponse:
+    return AuthService(db).refresh_session(payload)
 
 
 @router.post("/password-reset/request", response_model=PasswordResetResponse)

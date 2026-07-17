@@ -3,11 +3,13 @@ from decimal import Decimal, ROUND_HALF_UP
 from uuid import UUID
 
 from fastapi import HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.inventory_movement import InventoryMovement
 from app.models.sale import Sale
 from app.models.sale_item import SaleItem
+from app.models.payment_session import PaymentSession
 from app.models.user import User
 from app.repositories.customer_repository import CustomerRepository
 from app.repositories.inventory_movement_repository import InventoryMovementRepository
@@ -30,10 +32,11 @@ class SaleService:
         self.inventory_movement_repository = InventoryMovementRepository(db)
         self.audit_log_service = AuditLogService(db)
 
-    def list_sales(self) -> list[Sale]:
+    def list_sales(self, *, limit: int = 100, offset: int = 0) -> list[Sale]:
         """Lista todas las ventas."""
 
-        return self.sale_repository.find_all()
+        self._cancel_expired_payment_sales()
+        return self.sale_repository.find_all(limit=limit, offset=offset)
 
     def get_sale_by_id(self, sale_id: UUID) -> Sale:
         """Obtiene una venta por ID."""
@@ -51,6 +54,13 @@ class SaleService:
     def create_sale(self, payload: SaleCreate, current_user: User) -> Sale:
         """Crea una venta, descuenta stock y registra movimientos de inventario."""
 
+        variant_ids = [item.product_variant_id for item in payload.items]
+        if len(variant_ids) != len(set(variant_ids)):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cada variante debe aparecer una sola vez en la venta. Ajusta su cantidad en el mismo articulo.",
+            )
+
         if payload.customer_id is not None:
             customer = self.customer_repository.find_by_id(payload.customer_id)
 
@@ -67,6 +77,16 @@ class SaleService:
         subtotal = Decimal("0.00")
 
         try:
+            locked_variants = {}
+            for variant_id in sorted(variant_ids, key=str):
+                variant = self.variant_repository.find_by_id_for_update(variant_id)
+                if variant is None or not variant.is_active:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Una de las variantes seleccionadas no existe o esta inactiva.",
+                    )
+                locked_variants[variant_id] = variant
+
             sale = Sale(
                 sale_number=sale_number,
                 seller_id=current_user.id,
@@ -84,23 +104,19 @@ class SaleService:
             created_sale = self.sale_repository.create(sale)
 
             for item_payload in payload.items:
-                variant = self.variant_repository.find_by_id(
-                    item_payload.product_variant_id
+                variant = locked_variants[item_payload.product_variant_id]
+
+                available_stock = (
+                    variant.stock_quantity
+                    - self.variant_repository.active_reserved_quantity(variant.id)
                 )
-
-                if variant is None or not variant.is_active:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail="Una de las variantes seleccionadas no existe o está inactiva.",
-                    )
-
-                if variant.stock_quantity < item_payload.quantity:
+                if available_stock < item_payload.quantity:
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
                         detail=f"Stock insuficiente para el SKU {variant.sku}.",
                     )
 
-                unit_price = item_payload.unit_price or variant.sale_price
+                unit_price = variant.sale_price
                 item_subtotal = (
                     unit_price * item_payload.quantity
                 ) - item_payload.discount_amount
@@ -208,64 +224,16 @@ class SaleService:
             self.db.rollback()
             raise
 
-    def mark_sale_as_paid(self, sale_id: UUID, current_user: User | None = None) -> Sale:
-        """Marca una venta como pagada."""
-
-        sale = self.get_sale_by_id(sale_id)
-
-        if sale.status == "PAID":
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="La venta ya se encuentra pagada.",
-            )
-
-        if sale.status == "CANCELLED":
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No se puede pagar una venta cancelada.",
-            )
-
-        previous_status = sale.status
-
-        sale.status = "PAID"
-        sale.paid_at = datetime.now(timezone.utc)
-
-        try:
-            self.sale_repository.update(sale)
-
-            self.audit_log_service.register_action(
-                action="MARCAR_VENTA_PAGADA",
-                entity_name="SALE",
-                entity_id=sale.id,
-                current_user=current_user,
-                old_values={
-                    "status": previous_status,
-                },
-                new_values={
-                    "status": sale.status,
-                    "paid_at": sale.paid_at.isoformat() if sale.paid_at else None,
-                },
-            )
-
-            self.db.commit()
-
-            refreshed_sale = self.sale_repository.find_by_id(sale.id)
-
-            if refreshed_sale is None:
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="No se pudo recuperar la venta actualizada.",
-                )
-
-            return refreshed_sale
-        except Exception:
-            self.db.rollback()
-            raise
-
     def cancel_sale(self, sale_id: UUID, current_user: User) -> Sale:
         """Cancela una venta pendiente y devuelve sus unidades al inventario."""
 
-        sale = self.get_sale_by_id(sale_id)
+        sale = self.sale_repository.find_by_id_for_update(sale_id)
+
+        if sale is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Venta no encontrada.",
+            )
 
         if sale.status == "CANCELLED":
             raise HTTPException(
@@ -285,12 +253,21 @@ class SaleService:
                 detail="La venta ya tiene un pago aprobado y no puede cancelarse.",
             )
 
+        if any(session.status == "PROCESSING" for session in sale.payment_sessions):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=(
+                    "El cobro esta siendo verificado. Confirma su resultado antes de "
+                    "cancelar la venta."
+                ),
+            )
+
         now = datetime.now(timezone.utc)
         previous_status = sale.status
 
         try:
             for item in sale.items:
-                variant = self.variant_repository.find_by_id(
+                variant = self.variant_repository.find_by_id_for_update(
                     item.product_variant_id
                 )
 
@@ -365,3 +342,26 @@ class SaleService:
         now = datetime.now(timezone.utc)
 
         return f"V-{now.strftime('%Y%m%d%H%M%S%f')}"
+
+    def _cancel_expired_payment_sales(self) -> None:
+        now = datetime.now(timezone.utc)
+        sessions = list(self.db.scalars(
+            select(PaymentSession).where(
+                PaymentSession.status.in_([
+                    "CREATED", "SENT_TO_CUSTOMER", "CUSTOMER_VIEWING"
+                ]),
+                PaymentSession.expires_at <= now,
+            )
+        ).all())
+        processed_sales: set[UUID] = set()
+        for payment_session in sessions:
+            if payment_session.sale_id in processed_sales:
+                continue
+            processed_sales.add(payment_session.sale_id)
+            seller = self.db.get(User, payment_session.seller_id)
+            if seller is None:
+                continue
+            try:
+                self.cancel_sale(payment_session.sale_id, seller)
+            except HTTPException:
+                self.db.rollback()

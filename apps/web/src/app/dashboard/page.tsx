@@ -87,9 +87,8 @@ export default function DashboardPage() {
     [devices],
   );
 
-  const pendingSales = useMemo(
-    () =>
-      sales.filter((sale) => sale.status === "PENDING_PAYMENT"),
+  const cancelledSales = useMemo(
+    () => sales.filter((sale) => sale.status === "CANCELLED"),
     [sales],
   );
 
@@ -244,14 +243,14 @@ export default function DashboardPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
                 <CardTitle className="text-sm font-medium text-slate-500">
-                  Pendientes de cobro
+                  Ventas anuladas
                 </CardTitle>
                 <CreditCard className="h-5 w-5 text-slate-500" />
               </CardHeader>
               <CardContent>
-                <p className="text-3xl font-bold">{pendingSales.length}</p>
+                <p className="text-3xl font-bold">{cancelledSales.length}</p>
                 <p className="mt-1 text-xs text-slate-500">
-                  Ventas que todavía necesitan pago
+                  Conservadas únicamente para auditoría
                 </p>
               </CardContent>
             </Card>

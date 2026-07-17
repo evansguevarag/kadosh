@@ -17,6 +17,7 @@ from app.api.v1.endpoints import (
     products,
     public_receipts,
     reports,
+    return_culqi,
     returns,
     roles,
     sales,
@@ -46,4 +47,5 @@ api_router.include_router(customer_display_devices.router)
 api_router.include_router(culqi.router)
 api_router.include_router(reports.router)
 api_router.include_router(returns.router)
+api_router.include_router(return_culqi.router)
 api_router.include_router(audit_logs.router)

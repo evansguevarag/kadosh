@@ -48,7 +48,7 @@ class CulqiService:
                 detail="La llave secreta de Culqi no está configurada.",
             )
 
-        payment_session = self.payment_session_repository.find_by_id(
+        payment_session = self.payment_session_repository.find_by_id_for_update(
             payload.payment_session_id
         )
 
@@ -88,7 +88,7 @@ class CulqiService:
                 detail="La sesión de pago ya expiró.",
             )
 
-        sale = self.sale_repository.find_by_id(payment_session.sale_id)
+        sale = self.sale_repository.find_by_id_for_update(payment_session.sale_id)
 
         if sale is None:
             raise HTTPException(
@@ -719,7 +719,7 @@ class CulqiService:
         return order_number[:36] or f"ORD{timestamp_suffix}"
 
     def _get_payable_context(self, payment_session_id: UUID):
-        payment_session = self.payment_session_repository.find_by_id(
+        payment_session = self.payment_session_repository.find_by_id_for_update(
             payment_session_id
         )
 
@@ -759,7 +759,7 @@ class CulqiService:
                 detail="La sesión de pago ya expiró.",
             )
 
-        sale = self.sale_repository.find_by_id(payment_session.sale_id)
+        sale = self.sale_repository.find_by_id_for_update(payment_session.sale_id)
 
         if sale is None:
             raise HTTPException(

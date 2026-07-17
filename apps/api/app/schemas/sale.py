@@ -13,19 +13,14 @@ class SaleItemCreate(BaseModel):
         gt=0,
         examples=[2],
     )
-    unit_price: Decimal | None = Field(
-        default=None,
-        ge=0,
-        decimal_places=2,
-        examples=[Decimal("79.90")],
-        description="Si no se envía, se usará el precio actual de la variante.",
-    )
     discount_amount: Decimal = Field(
         default=Decimal("0.00"),
         ge=0,
         decimal_places=2,
         examples=[Decimal("0.00")],
     )
+
+    model_config = ConfigDict(extra="forbid")
 
 
 class SaleCreate(BaseModel):
@@ -57,6 +52,8 @@ class SaleCreate(BaseModel):
         max_length=255,
         examples=["Venta realizada en tienda."],
     )
+
+    model_config = ConfigDict(extra="forbid")
 
 
 class SaleItemResponse(BaseModel):
@@ -110,7 +107,7 @@ class SaleResponse(BaseModel):
     cancelled_at: datetime | None
     created_at: datetime
     updated_at: datetime
-    items: list[SaleItemResponse] = []
+    items: list[SaleItemResponse] = Field(default_factory=list)
     customer: SaleCustomerResponse | None = None
 
     model_config = ConfigDict(from_attributes=True)

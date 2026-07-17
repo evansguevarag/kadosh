@@ -27,7 +27,7 @@ def get_detail_report(
     start_date: date = Query(),
     end_date: date = Query(),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles("ADMIN", "SELLER", "CASHIER")),
+    current_user: User = Depends(require_roles("ADMIN")),
 ) -> ReportsDetailResponse:
     if start_date > end_date:
         raise HTTPException(

@@ -18,10 +18,14 @@ from app.services.audit_log_service import AuditLogService
 ALLOWED_PAYMENT_SESSION_STATUSES = {
     "CUSTOMER_VIEWING",
     "PROCESSING",
-    "PAID",
-    "FAILED",
     "EXPIRED",
     "CANCELLED",
+}
+
+PAYMENT_SESSION_TRANSITIONS = {
+    "SENT_TO_CUSTOMER": {"CUSTOMER_VIEWING", "EXPIRED", "CANCELLED"},
+    "CUSTOMER_VIEWING": {"PROCESSING", "EXPIRED", "CANCELLED"},
+    "PROCESSING": set(),
 }
 
 
@@ -177,7 +181,14 @@ class PaymentSessionService:
     ) -> PaymentSession:
         """Actualiza el estado de una sesión de pago."""
 
-        payment_session = self.get_payment_session_by_id(payment_session_id)
+        payment_session = self.payment_session_repository.find_by_id_for_update(
+            payment_session_id
+        )
+        if payment_session is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Sesion de pago no encontrada.",
+            )
         previous_status = payment_session.status
         next_status = payload.status.strip().upper()
 
@@ -191,6 +202,19 @@ class PaymentSessionService:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="La sesión de pago ya se encuentra en un estado final.",
+            )
+
+        allowed_transitions = PAYMENT_SESSION_TRANSITIONS.get(
+            payment_session.status,
+            set(),
+        )
+        if next_status not in allowed_transitions:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=(
+                    f"No se puede cambiar la sesion de {payment_session.status} "
+                    f"a {next_status}."
+                ),
             )
 
         now = datetime.now(timezone.utc)
@@ -211,9 +235,6 @@ class PaymentSessionService:
 
         if next_status == "PROCESSING":
             payment_session.processing_at = now
-
-        if next_status in {"PAID", "FAILED"}:
-            payment_session.completed_at = now
 
         if next_status == "CANCELLED":
             payment_session.cancelled_at = now

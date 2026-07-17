@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.api.v1.dependencies import get_db
@@ -14,12 +14,14 @@ router = APIRouter(prefix="/payments", tags=["Payments"])
 
 @router.get("", response_model=list[PaymentResponse])
 def list_payments(
+    limit: int = Query(default=100, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles("ADMIN", "SELLER", "CASHIER")),
 ) -> list[PaymentResponse]:
     service = PaymentService(db)
 
-    return service.list_payments()
+    return service.list_payments(limit=limit, offset=offset)
 
 
 @router.get("/by-sale/{sale_id}", response_model=list[PaymentResponse])

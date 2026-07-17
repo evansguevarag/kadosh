@@ -27,10 +27,12 @@ class InventoryService:
         self.variant_repository = ProductVariantRepository(db)
         self.movement_repository = InventoryMovementRepository(db)
 
-    def list_movements(self) -> list[InventoryMovement]:
+    def list_movements(
+        self, *, limit: int = 100, offset: int = 0
+    ) -> list[InventoryMovement]:
         """Lista todos los movimientos de inventario."""
 
-        return self.movement_repository.find_all()
+        return self.movement_repository.find_all(limit=limit, offset=offset)
 
     def list_movements_by_variant(
         self,
@@ -69,7 +71,9 @@ class InventoryService:
                 detail="Los movimientos por venta se generan automáticamente desde el módulo de ventas.",
             )
 
-        variant = self.variant_repository.find_by_id(payload.product_variant_id)
+        variant = self.variant_repository.find_by_id_for_update(
+            payload.product_variant_id
+        )
 
         if variant is None or not variant.is_active:
             raise HTTPException(
@@ -78,11 +82,20 @@ class InventoryService:
             )
 
         previous_stock = variant.stock_quantity
+        reserved_stock = self.variant_repository.active_reserved_quantity(variant.id)
         new_stock = self._calculate_new_stock(
             movement_type=movement_type,
             previous_stock=previous_stock,
             quantity=payload.quantity,
         )
+        if new_stock < reserved_stock:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=(
+                    f"No se puede reducir el stock por debajo de las {reserved_stock} "
+                    "unidades reservadas para pagos en proceso."
+                ),
+            )
 
         variant.stock_quantity = new_stock
 

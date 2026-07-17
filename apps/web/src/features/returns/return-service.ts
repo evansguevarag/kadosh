@@ -8,6 +8,8 @@ export type ReturnTransactionCreate = {
   item_condition: string;
   inventory_resolution: string;
   settlement_method: string | null;
+  settlement_reference: string | null;
+  settlement_device_id: string | null;
   notes: string | null;
   items: Array<{ sale_item_id: string; quantity: number }>;
   replacements: Array<{ product_variant_id: string; quantity: number }>;
@@ -21,6 +23,13 @@ export const returnService = {
     return apiClient.post<ReturnTransaction, ReturnTransactionCreate>(
       "/returns",
       payload,
+      { token },
+    );
+  },
+  cancel(transactionId: string, token: string) {
+    return apiClient.patch<ReturnTransaction, Record<string, never>>(
+      `/returns/${transactionId}/cancel`,
+      {},
       { token },
     );
   },

@@ -10,7 +10,6 @@ import type { CustomerDisplayDevice } from "@/features/payments/customer-display
 export type SaleItemCreateRequest = {
   product_variant_id: string;
   quantity: number;
-  unit_price?: string | null;
   discount_amount: string;
 };
 

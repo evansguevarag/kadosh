@@ -24,7 +24,7 @@ type AuthUserApiResponse = AuthUser & {
 };
 
 function canUseBrowserStorage(): boolean {
-  return typeof window !== "undefined" && Boolean(window.localStorage);
+  return typeof window !== "undefined" && Boolean(window.sessionStorage);
 }
 
 function normalizeAuthUser(user: AuthUserApiResponse): AuthUser {
@@ -85,6 +85,21 @@ export const authService = {
     );
   },
 
+  refreshSession(): Promise<TokenResponse> {
+    const refreshToken = this.getRefreshToken();
+    if (!refreshToken) {
+      return Promise.reject(new Error("No hay una sesion para renovar."));
+    }
+    return apiClient
+      .post<TokenResponse, { refresh_token: string }>("/auth/refresh", {
+        refresh_token: refreshToken,
+      })
+      .then((response) => {
+        this.saveSession(response);
+        return response;
+      });
+  },
+
   getCurrentUser(token?: string | null): Promise<AuthUser> {
     return apiClient
       .get<AuthUserApiResponse>("/auth/me", {
@@ -106,8 +121,10 @@ export const authService = {
       return;
     }
 
-    window.localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, accessToken);
-    window.localStorage.setItem(REFRESH_TOKEN_STORAGE_KEY, refreshToken);
+    window.localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
+    window.localStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY);
+    window.sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, accessToken);
+    window.sessionStorage.setItem(REFRESH_TOKEN_STORAGE_KEY, refreshToken);
   },
 
   saveUser(user: AuthUser): void {
@@ -115,7 +132,8 @@ export const authService = {
       return;
     }
 
-    window.localStorage.setItem(AUTH_USER_STORAGE_KEY, JSON.stringify(user));
+    window.localStorage.removeItem(AUTH_USER_STORAGE_KEY);
+    window.sessionStorage.setItem(AUTH_USER_STORAGE_KEY, JSON.stringify(user));
   },
 
   getAccessToken(): string | null {
@@ -123,7 +141,7 @@ export const authService = {
       return null;
     }
 
-    return window.localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY);
+    return window.sessionStorage.getItem(ACCESS_TOKEN_STORAGE_KEY);
   },
 
   getRefreshToken(): string | null {
@@ -131,7 +149,7 @@ export const authService = {
       return null;
     }
 
-    return window.localStorage.getItem(REFRESH_TOKEN_STORAGE_KEY);
+    return window.sessionStorage.getItem(REFRESH_TOKEN_STORAGE_KEY);
   },
 
   getStoredUser(): AuthUser | null {
@@ -139,7 +157,7 @@ export const authService = {
       return null;
     }
 
-    const rawUser = window.localStorage.getItem(AUTH_USER_STORAGE_KEY);
+    const rawUser = window.sessionStorage.getItem(AUTH_USER_STORAGE_KEY);
 
     if (!rawUser) {
       return null;
@@ -160,6 +178,9 @@ export const authService = {
     window.localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
     window.localStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY);
     window.localStorage.removeItem(AUTH_USER_STORAGE_KEY);
+    window.sessionStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
+    window.sessionStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY);
+    window.sessionStorage.removeItem(AUTH_USER_STORAGE_KEY);
     scannerService.clearStoredSession();
     clearPosWorkspaceStorage();
   },

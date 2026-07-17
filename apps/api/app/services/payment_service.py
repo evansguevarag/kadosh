@@ -41,10 +41,10 @@ class PaymentService:
         self.sale_repository = SaleRepository(db)
         self.audit_log_service = AuditLogService(db)
 
-    def list_payments(self) -> list[Payment]:
+    def list_payments(self, *, limit: int = 100, offset: int = 0) -> list[Payment]:
         """Lista todos los pagos registrados."""
 
-        return self.payment_repository.find_all()
+        return self.payment_repository.find_all(limit=limit, offset=offset)
 
     def list_payments_by_sale(self, sale_id: UUID) -> list[Payment]:
         """Lista los pagos de una venta."""
@@ -100,7 +100,7 @@ class PaymentService:
                 detail="Por ahora solo se aceptan pagos en PEN.",
             )
 
-        sale = self.sale_repository.find_by_id(payload.sale_id)
+        sale = self.sale_repository.find_by_id_for_update(payload.sale_id)
 
         if sale is None:
             raise HTTPException(

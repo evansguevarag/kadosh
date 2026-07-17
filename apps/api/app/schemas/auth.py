@@ -35,6 +35,12 @@ class TokenResponse(BaseModel):
     user: AuthUserResponse
 
 
+class RefreshTokenRequest(BaseModel):
+    """Refresh token utilizado para renovar una sesion activa."""
+
+    refresh_token: str = Field(min_length=1)
+
+
 class PasswordResetRequest(BaseModel):
     """Solicitud para enviar un OTP de restablecimiento."""
 

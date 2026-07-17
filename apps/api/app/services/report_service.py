@@ -130,11 +130,9 @@ class ReportService:
         )
 
         return SalesSummaryReportResponse(
-            total_sales=len(sales),
+            total_sales=len(paid_sales),
             paid_sales=len(paid_totals),
-            pending_sales=sum(
-                sale.status == "PENDING_PAYMENT" for sale in sales
-            ),
+            pending_sales=0,
             cancelled_sales=sum(sale.status == "CANCELLED" for sale in sales),
             total_revenue=total_revenue.quantize(Decimal("0.01")),
             average_ticket=average_ticket.quantize(Decimal("0.01")),

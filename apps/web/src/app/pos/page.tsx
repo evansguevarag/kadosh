@@ -1109,7 +1109,6 @@ export default function PosPage() {
       items: cartItems.map((item) => ({
         product_variant_id: item.productVariantId,
         quantity: item.quantity,
-        unit_price: item.unitPrice.toFixed(2),
         discount_amount: item.discountAmount.toFixed(2),
       })),
       discount_total: Number(discountTotal || 0).toFixed(2),

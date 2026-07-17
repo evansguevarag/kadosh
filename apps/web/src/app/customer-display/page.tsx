@@ -200,6 +200,7 @@ export default function CustomerDisplayPage() {
   const [connectionStatus, setConnectionStatus] =
     useState<DisplayConnectionStatus>("initializing");
   const [isCulqiReady, setIsCulqiReady] = useState(false);
+  const [culqiLoadFailed, setCulqiLoadFailed] = useState(false);
   const [isPaying, setIsPaying] = useState(false);
   const [isRefreshingManually, setIsRefreshingManually] = useState(false);
   const [paymentMessage, setPaymentMessage] = useState("");
@@ -314,6 +315,23 @@ export default function CustomerDisplayPage() {
   }, [loadSessions, router]);
 
   useEffect(() => {
+    const checkCulqiReadiness = () => {
+      if (window.CulqiCheckout) {
+        setIsCulqiReady(true);
+        setCulqiLoadFailed(false);
+        window.clearInterval(readinessInterval);
+      }
+    };
+    const readinessTimeout = window.setTimeout(checkCulqiReadiness, 0);
+    const readinessInterval = window.setInterval(checkCulqiReadiness, 500);
+
+    return () => {
+      window.clearTimeout(readinessTimeout);
+      window.clearInterval(readinessInterval);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!credentials) {
       return;
     }
@@ -342,11 +360,39 @@ export default function CustomerDisplayPage() {
       setPaymentMessage("");
 
       try {
-        const response = await culqiService.createCharge({
-          payment_session_id: activeSession.id,
-          token_id: tokenId,
-          email: getCulqiEmail(activeSession.receipt_email ?? ""),
-        });
+        if (!credentials) {
+          throw new Error("La tablet no esta vinculada.");
+        }
+        if (activeSession.context_type === "RETURN_DIFFERENCE") {
+          const response = await culqiService.createReturnCharge(
+            activeSession.id,
+            tokenId,
+            getCulqiEmail(activeSession.receipt_email ?? ""),
+            credentials.deviceId,
+            credentials.deviceToken,
+          );
+          setPaymentMessage(response.message);
+          if (response.status === "PAID") {
+            setSessions((current) =>
+              current.filter((item) => item.id !== activeSession.id),
+            );
+            setPaymentMessage("");
+            toast.success(response.message);
+          } else {
+            toast.error(response.message);
+          }
+          await loadSessions(credentials);
+          return;
+        }
+        const response = await culqiService.createCharge(
+          {
+            payment_session_id: activeSession.id,
+            token_id: tokenId,
+            email: getCulqiEmail(activeSession.receipt_email ?? ""),
+          },
+          credentials.deviceId,
+          credentials.deviceToken,
+        );
 
         await markSessionAsPaid(response.message, response.sale_id);
 
@@ -376,23 +422,54 @@ export default function CustomerDisplayPage() {
       setPaymentMessage("Verificando el pago con Culqi...");
 
       try {
-        let response = await culqiService.confirmOrder({
-          payment_session_id: activeSession.id,
-          culqi_order_id: culqiOrderId,
-        });
+        if (!credentials) {
+          throw new Error("La tablet no esta vinculada.");
+        }
+        let response = activeSession.context_type === "RETURN_DIFFERENCE"
+          ? await culqiService.confirmReturnOrder(
+              activeSession.id,
+              culqiOrderId,
+              credentials.deviceId,
+              credentials.deviceToken,
+            )
+          : await culqiService.confirmOrder(
+              {
+                payment_session_id: activeSession.id,
+                culqi_order_id: culqiOrderId,
+              },
+              credentials.deviceId,
+              credentials.deviceToken,
+            );
 
         for (let attempt = 1; response.status !== "PAID" && attempt < 6; attempt += 1) {
           await wait(4000);
-          response = await culqiService.confirmOrder({
-            payment_session_id: activeSession.id,
-            culqi_order_id: culqiOrderId,
-          });
+          response = activeSession.context_type === "RETURN_DIFFERENCE"
+            ? await culqiService.confirmReturnOrder(
+                activeSession.id,
+                culqiOrderId,
+                credentials.deviceId,
+                credentials.deviceToken,
+              )
+            : await culqiService.confirmOrder(
+                {
+                  payment_session_id: activeSession.id,
+                  culqi_order_id: culqiOrderId,
+                },
+                credentials.deviceId,
+                credentials.deviceToken,
+              );
         }
 
         setPaymentMessage(response.message);
 
         if (response.status === "PAID") {
-          await markSessionAsPaid(response.message, response.sale_id);
+          if ("sale_id" in response) {
+            await markSessionAsPaid(response.message, response.sale_id);
+          } else {
+            setSessions((current) => current.filter((item) => item.id !== activeSession.id));
+            setPaymentMessage("");
+            toast.success(response.message);
+          }
         } else {
           toast.info(response.message);
         }
@@ -449,10 +526,24 @@ export default function CustomerDisplayPage() {
     let culqiOrderId: string;
 
     try {
-      const orderResponse = await culqiService.createOrder({
-        payment_session_id: activeSession.id,
-        email: getCulqiEmail(activeSession.receipt_email ?? ""),
-      });
+      if (!credentials) {
+        throw new Error("La tablet no esta vinculada.");
+      }
+      const orderResponse = activeSession.context_type === "RETURN_DIFFERENCE"
+        ? await culqiService.createReturnOrder(
+            activeSession.id,
+            getCulqiEmail(activeSession.receipt_email ?? ""),
+            credentials.deviceId,
+            credentials.deviceToken,
+          )
+        : await culqiService.createOrder(
+            {
+              payment_session_id: activeSession.id,
+              email: getCulqiEmail(activeSession.receipt_email ?? ""),
+            },
+            credentials.deviceId,
+            credentials.deviceToken,
+          );
 
       culqiOrderId = orderResponse.culqi_order_id;
       setPaymentMessage("");
@@ -569,9 +660,17 @@ export default function CustomerDisplayPage() {
       <Script
         src="https://js.culqi.com/checkout-js"
         strategy="afterInteractive"
-        onLoad={() => setIsCulqiReady(true)}
+        onLoad={() => {
+          setIsCulqiReady(Boolean(window.CulqiCheckout));
+          setCulqiLoadFailed(false);
+        }}
+        onReady={() => {
+          setIsCulqiReady(Boolean(window.CulqiCheckout));
+          setCulqiLoadFailed(false);
+        }}
         onError={() => {
           setIsCulqiReady(false);
+          setCulqiLoadFailed(true);
           toast.error("No se pudo cargar Culqi Checkout.");
         }}
       />
@@ -688,6 +787,24 @@ export default function CustomerDisplayPage() {
                     </div>
                   ) : null}
 
+                  {activeSession.return_difference ? (
+                    <div className="overflow-hidden rounded-2xl border bg-white text-left">
+                      <div className="flex items-center justify-between gap-4 border-b bg-slate-50 px-5 py-4">
+                        <p className="font-semibold text-slate-950">Diferencia del cambio</p>
+                        <p className="text-xs font-medium text-slate-500">{activeSession.return_difference.return_number}</p>
+                      </div>
+                      <div className="space-y-3 px-5 py-4">
+                        <p className="text-sm text-slate-600">Compra {activeSession.return_difference.original_sale_number}</p>
+                        {activeSession.return_difference.replacements.map((item) => (
+                          <div className="flex items-center justify-between gap-4" key={item.variant_sku}>
+                            <p className="font-medium text-slate-950">{item.quantity} × {item.product_name}</p>
+                            <p className="text-sm text-slate-500">{item.variant_sku}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+
                   <div className="rounded-3xl bg-slate-950 px-8 py-10 text-white">
                     <p className="text-sm text-slate-300">Total a pagar</p>
                     <p className="mt-3 text-5xl font-bold tracking-tight">
@@ -737,6 +854,14 @@ export default function CustomerDisplayPage() {
                       </>
                     )}
                   </Button>
+
+                  {!isCulqiReady ? (
+                    <p className="text-sm text-amber-700" role="status">
+                      {culqiLoadFailed
+                        ? "No se pudo cargar Culqi. Verifica la conexión a internet y recarga la pantalla."
+                        : "Cargando el pago seguro de Culqi..."}
+                    </p>
+                  ) : null}
 
                   {paymentMessage ? (
                     <div className="flex items-center justify-center gap-2 rounded-2xl border bg-slate-50 p-4 text-sm font-medium text-slate-700">

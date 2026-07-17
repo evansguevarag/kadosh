@@ -1,10 +1,10 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.api.v1.dependencies import get_db
-from app.api.v1.security import get_current_user, require_roles
+from app.api.v1.security import require_roles
 from app.models.user import User
 from app.schemas.inventory_movement import (
     InventoryMovementCreate,
@@ -20,12 +20,14 @@ router = APIRouter(prefix="/inventory", tags=["Inventory"])
     response_model=list[InventoryMovementResponse],
 )
 def list_inventory_movements(
+    limit: int = Query(default=100, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles("ADMIN", "SELLER", "CASHIER")),
 ) -> list[InventoryMovementResponse]:
     service = InventoryService(db)
 
-    return service.list_movements()
+    return service.list_movements(limit=limit, offset=offset)
 
 
 @router.get(

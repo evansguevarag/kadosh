@@ -46,7 +46,6 @@ import type { Sale } from "@/types/api";
 
 const saleStatusFilters = [
   { label: "Todas", value: "ALL" },
-  { label: "Pendientes", value: "PENDING_PAYMENT" },
   { label: "Pagadas", value: "PAID" },
   { label: "Anuladas", value: "CANCELLED" },
 ] as const;
@@ -126,7 +125,7 @@ export default function SalesPage() {
         }
 
         const response = await saleService.listSales(token);
-        setSales(response);
+        setSales(response.filter((sale) => sale.status !== "PENDING_PAYMENT"));
 
         if (showToast) {
           toast.success("Ventas actualizadas.");

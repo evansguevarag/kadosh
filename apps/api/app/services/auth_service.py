@@ -1,6 +1,7 @@
 import hashlib
 import secrets
 from datetime import UTC, datetime, timedelta
+from uuid import UUID
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
@@ -9,6 +10,7 @@ from app.core.config import settings
 from app.core.security import (
     create_access_token,
     create_refresh_token,
+    decode_token,
     hash_password,
     verify_password,
 )
@@ -28,6 +30,7 @@ from app.schemas.auth import (
     PasswordResetRequest,
     PasswordResetResponse,
     PasswordResetVerifyRequest,
+    RefreshTokenRequest,
     TokenResponse,
 )
 from app.services.email_service import EmailService
@@ -140,6 +143,39 @@ class AuthService:
         return TokenResponse(
             access_token=access_token,
             refresh_token=refresh_token,
+            user=self._build_auth_user_response(user),
+        )
+
+    def refresh_session(self, payload: RefreshTokenRequest) -> TokenResponse:
+        """Renueva ambos JWT despues de validar usuario y tipo de token."""
+
+        token_payload = decode_token(payload.refresh_token)
+        if token_payload.get("type") != "refresh":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="El token no es de renovacion.",
+            )
+
+        try:
+            user_id = UUID(str(token_payload.get("sub", "")))
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token de renovacion invalido.",
+            ) from exc
+
+        user = self.user_repository.find_by_id(user_id)
+        if user is None or not user.is_active or user.status != "ACTIVE":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="La sesion ya no esta activa.",
+            )
+
+        role_name = user.role.name if user.role else "UNKNOWN"
+        claims = {"role": role_name, "email": user.email}
+        return TokenResponse(
+            access_token=create_access_token(str(user.id), claims),
+            refresh_token=create_refresh_token(str(user.id), claims),
             user=self._build_auth_user_response(user),
         )
 

@@ -1,9 +1,12 @@
 from uuid import UUID
 
-from sqlalchemy import select
+from datetime import datetime, timezone
+
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models.product_variant import ProductVariant
+from app.models.return_transaction import ReturnInventoryReservation
 
 
 class ProductVariantRepository:
@@ -50,6 +53,27 @@ class ProductVariantRepository:
         statement = select(ProductVariant).where(ProductVariant.id == variant_id)
 
         return self.db.scalar(statement)
+
+    def find_by_id_for_update(self, variant_id: UUID) -> ProductVariant | None:
+        """Obtiene y bloquea una variante hasta finalizar la transaccion actual."""
+
+        statement = (
+            select(ProductVariant)
+            .where(ProductVariant.id == variant_id)
+            .with_for_update()
+        )
+
+        return self.db.scalar(statement)
+
+    def active_reserved_quantity(self, variant_id: UUID) -> int:
+        statement = select(
+            func.coalesce(func.sum(ReturnInventoryReservation.quantity), 0)
+        ).where(
+            ReturnInventoryReservation.product_variant_id == variant_id,
+            ReturnInventoryReservation.status == "ACTIVE",
+            ReturnInventoryReservation.expires_at > datetime.now(timezone.utc),
+        )
+        return int(self.db.scalar(statement) or 0)
 
     def find_by_sku(self, sku: str) -> ProductVariant | None:
         """Obtiene una variante por SKU exacto."""

@@ -22,9 +22,11 @@ class ReturnTransactionCreate(BaseModel):
     item_condition: str = Field(min_length=2, max_length=30)
     inventory_resolution: str
     settlement_method: str | None = Field(default=None, max_length=40)
+    settlement_reference: str | None = Field(default=None, max_length=120)
+    settlement_device_id: UUID | None = None
     notes: str | None = Field(default=None, max_length=500)
     items: list[ReturnItemCreate] = Field(min_length=1)
-    replacements: list[ReplacementItemCreate] = []
+    replacements: list[ReplacementItemCreate] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def validate_transaction(self):
@@ -42,7 +44,17 @@ class ReturnTransactionCreate(BaseModel):
         if self.transaction_type == "EXCHANGE" and not self.replacements:
             raise ValueError("Un cambio debe incluir al menos un reemplazo.")
 
+        item_ids = [item.sale_item_id for item in self.items]
+        if len(item_ids) != len(set(item_ids)):
+            raise ValueError("Cada producto recibido debe aparecer una sola vez.")
+
+        replacement_ids = [item.product_variant_id for item in self.replacements]
+        if len(replacement_ids) != len(set(replacement_ids)):
+            raise ValueError("Cada producto de reemplazo debe aparecer una sola vez.")
+
         return self
+
+    model_config = ConfigDict(extra="forbid")
 
 
 class ReturnItemResponse(BaseModel):
@@ -67,6 +79,21 @@ class ReplacementItemResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class ReturnSettlementResponse(BaseModel):
+    id: UUID
+    direction: str
+    method: str | None
+    amount: Decimal
+    currency: str
+    status: str
+    operation_reference: str | None
+    settled_at: datetime | None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class ReturnTransactionResponse(BaseModel):
     id: UUID
     return_number: str
@@ -86,4 +113,5 @@ class ReturnTransactionResponse(BaseModel):
     updated_at: datetime
     items: list[ReturnItemResponse]
     replacements: list[ReplacementItemResponse]
+    settlement: ReturnSettlementResponse | None
     model_config = ConfigDict(from_attributes=True)

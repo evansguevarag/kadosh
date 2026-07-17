@@ -12,10 +12,15 @@ class PaymentRepository:
     def __init__(self, db: Session) -> None:
         self.db = db
 
-    def find_all(self) -> list[Payment]:
+    def find_all(self, *, limit: int = 100, offset: int = 0) -> list[Payment]:
         """Obtiene todos los pagos."""
 
-        statement = select(Payment).order_by(Payment.created_at.desc())
+        statement = (
+            select(Payment)
+            .order_by(Payment.created_at.desc())
+            .offset(offset)
+            .limit(limit)
+        )
 
         return list(self.db.scalars(statement).all())
 

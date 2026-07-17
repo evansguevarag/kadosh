@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.api.v1.dependencies import get_db
@@ -14,12 +14,14 @@ router = APIRouter(prefix="/sales", tags=["Sales"])
 
 @router.get("", response_model=list[SaleResponse])
 def list_sales(
+    limit: int = Query(default=100, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles("ADMIN", "SELLER", "CASHIER")),
 ) -> list[SaleResponse]:
     service = SaleService(db)
 
-    return service.list_sales()
+    return service.list_sales(limit=limit, offset=offset)
 
 
 @router.get("/{sale_id}", response_model=SaleResponse)
@@ -46,17 +48,6 @@ def create_sale(
     service = SaleService(db)
 
     return service.create_sale(payload, current_user)
-
-
-@router.patch("/{sale_id}/mark-as-paid", response_model=SaleResponse)
-def mark_sale_as_paid(
-    sale_id: UUID,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles("ADMIN", "SELLER", "CASHIER")),
-) -> SaleResponse:
-    service = SaleService(db)
-
-    return service.mark_sale_as_paid(sale_id, current_user)
 
 
 @router.patch("/{sale_id}/cancel", response_model=SaleResponse)
