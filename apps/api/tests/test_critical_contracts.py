@@ -9,6 +9,7 @@ from fastapi import HTTPException
 
 from app.schemas.return_transaction import ReturnTransactionCreate
 from app.schemas.sale import SaleCreate
+from app.api.v1.endpoints.public_receipts import get_public_receipt
 from app.services.payment_session_service import (
     ALLOWED_PAYMENT_SESSION_STATUSES,
     PAYMENT_SESSION_TRANSITIONS,
@@ -29,6 +30,32 @@ class SaleContractTests(unittest.TestCase):
                     }]
                 }
             )
+
+    @patch("app.api.v1.endpoints.public_receipts.SaleRepository")
+    def test_cancelled_sale_has_no_public_receipt(
+        self, repository_class: Mock
+    ) -> None:
+        repository_class.return_value.find_by_receipt_token.return_value = (
+            SimpleNamespace(status="CANCELLED")
+        )
+
+        with self.assertRaises(HTTPException) as raised:
+            get_public_receipt("cancelled-token", Mock())
+
+        self.assertEqual(raised.exception.status_code, 404)
+
+    @patch("app.api.v1.endpoints.public_receipts.SaleRepository")
+    def test_pending_sale_has_no_public_receipt(
+        self, repository_class: Mock
+    ) -> None:
+        repository_class.return_value.find_by_receipt_token.return_value = (
+            SimpleNamespace(status="PENDING_PAYMENT")
+        )
+
+        with self.assertRaises(HTTPException) as raised:
+            get_public_receipt("pending-token", Mock())
+
+        self.assertEqual(raised.exception.status_code, 404)
 
 
 class ReturnContractTests(unittest.TestCase):

@@ -185,12 +185,24 @@ def get_customer_display_receipt(
             detail="Sesión de pago no encontrada para esta tablet.",
         )
 
+    if payment_session.status != "PAID":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="El comprobante estara disponible cuando el pago sea confirmado.",
+        )
+
     sale = SaleRepository(db).find_by_id(payment_session.sale_id)
 
     if sale is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Venta no encontrada.",
+        )
+
+    if sale.status != "PAID":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="La venta no tiene un comprobante de pago disponible.",
         )
 
     return SaleResponse.model_validate(sale)

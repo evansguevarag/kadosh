@@ -139,14 +139,12 @@ export default function SaleDetailPage() {
               </Badge>
             ) : null}
 
-            <Button
-              type="button"
-              disabled={!sale}
-              onClick={handlePrintReceipt}
-            >
-              <Printer className="h-4 w-4" />
-              Imprimir comprobante
-            </Button>
+            {sale?.status === "PAID" ? (
+              <Button type="button" onClick={handlePrintReceipt}>
+                <Printer className="h-4 w-4" />
+                Imprimir comprobante
+              </Button>
+            ) : null}
           </div>
         </div>
 
@@ -321,7 +319,7 @@ export default function SaleDetailPage() {
         </AppShell>
       </div>
 
-      {sale ? <SaleReceiptPrintView sale={sale} /> : null}
+      {sale?.status === "PAID" ? <SaleReceiptPrintView sale={sale} /> : null}
     </>
   );
 }

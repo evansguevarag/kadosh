@@ -14,6 +14,12 @@ def get_public_receipt(receipt_token: str, db: Session = Depends(get_db)):
     if sale is None:
         raise HTTPException(status_code=404, detail="Comprobante no encontrado.")
 
+    if sale.status != "PAID":
+        raise HTTPException(
+            status_code=404,
+            detail="El comprobante no esta disponible.",
+        )
+
     customer_name = "Público general"
     customer_document_type = None
     customer_document_number = None
