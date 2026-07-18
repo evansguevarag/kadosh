@@ -42,7 +42,7 @@ La guia se basa en el codigo y configuracion existentes, principalmente:
 - `apps/api/requirements.txt`;
 - `apps/api/app/api`, `core`, `db`, `models`, `repositories`, `schemas` y `services`;
 - `database/001_init_schema.sql`;
-- `database/migrations/003` a `016`;
+- `database/migrations/003` a `017`;
 - `apps/api/tests/test_critical_contracts.py` y scripts de prueba Culqi sandbox;
 - `apps/api/vercel.json`;
 - ejemplos de variables de entorno;
@@ -202,7 +202,7 @@ kadosh-pos/
 |       `-- tsconfig.json
 |-- database/
 |   |-- 001_init_schema.sql            # Esquema inicial
-|   `-- migrations/                    # Cambios incrementales 003-016
+|   `-- migrations/                    # Cambios incrementales 003-017
 |-- docs/
 |   |-- codex/                         # Contexto y reglas de trabajo
 |   |-- deployment/                    # Guia de Vercel
@@ -478,6 +478,7 @@ Reglas demostradas:
 | `014` | Sesiones Culqi de diferencias enviadas a pantalla cliente |
 | `015` | Reservas temporales de inventario para productos de reemplazo |
 | `016` | Movimiento `CAMBIO_SALIDA` en el kardex de inventario |
+| `017` | FK UUID entre sesiones de pago de ventas y tablets vinculadas |
 
 Regla: una migracion aplicada nunca se edita para cambiar su historia. Se crea una nueva migracion incremental, idempotente cuando sea razonable y compatible con datos existentes.
 
@@ -1036,7 +1037,7 @@ python -m unittest discover -s tests -p "test_*.py"
 
 ### 16.2 Estado real de pruebas
 
-El backend incluye `tests/test_critical_contracts.py`, actualmente con doce contratos automatizados para impedir sobrescritura de precios, publicacion de comprobantes pendientes o cancelados, items duplicados en devoluciones, estados de proveedor declarados por el operador, transiciones indebidas desde `PROCESSING`, diferencias de importe o metadata Culqi y cancelacion insegura de ordenes pagadas. Tambien existe una prueba E2E Culqi sandbox que ejecuta un cobro aislado, valida el efecto temporal de inventario y revierte los datos locales de prueba.
+El backend incluye `tests/test_critical_contracts.py`, actualmente con catorce contratos automatizados para impedir sobrescritura de precios, publicacion de comprobantes pendientes o cancelados, identificadores de tablet invalidos, perdida de la FK de dispositivos, items duplicados en devoluciones, estados de proveedor declarados por el operador, transiciones indebidas desde `PROCESSING`, diferencias de importe o metadata Culqi y cancelacion insegura de ordenes pagadas. Tambien existe una prueba E2E Culqi sandbox que ejecuta un cobro aislado, valida el efecto temporal de inventario y revierte los datos locales de prueba.
 
 Estas pruebas constituyen una base de regresion valiosa, pero todavia no equivalen a una cobertura completa. Faltan pruebas de integracion con PostgreSQL para todos los estados, pruebas frontend de componentes y una suite Playwright del recorrido de usuario.
 

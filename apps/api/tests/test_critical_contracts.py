@@ -9,7 +9,9 @@ from fastapi import HTTPException
 
 from app.schemas.return_transaction import ReturnTransactionCreate
 from app.schemas.sale import SaleCreate
+from app.schemas.payment_session import PaymentSessionCreate
 from app.api.v1.endpoints.public_receipts import get_public_receipt
+from app.models.payment_session import PaymentSession
 from app.services.payment_session_service import (
     ALLOWED_PAYMENT_SESSION_STATUSES,
     PAYMENT_SESSION_TRANSITIONS,
@@ -78,6 +80,23 @@ class ReturnContractTests(unittest.TestCase):
 
 
 class PaymentSessionContractTests(unittest.TestCase):
+    def test_device_id_must_be_a_uuid(self) -> None:
+        with self.assertRaises(ValidationError):
+            PaymentSessionCreate.model_validate(
+                {
+                    "sale_id": str(uuid4()),
+                    "device_id": "tablet-caja-01",
+                }
+            )
+
+    def test_device_uuid_has_a_physical_foreign_key(self) -> None:
+        foreign_keys = {
+            foreign_key.target_fullname
+            for foreign_key in PaymentSession.__table__.c.device_uuid.foreign_keys
+        }
+
+        self.assertEqual(foreign_keys, {"customer_display_devices.id"})
+
     def test_operator_cannot_declare_provider_outcomes(self) -> None:
         self.assertNotIn("PAID", ALLOWED_PAYMENT_SESSION_STATUSES)
         self.assertNotIn("FAILED", ALLOWED_PAYMENT_SESSION_STATUSES)

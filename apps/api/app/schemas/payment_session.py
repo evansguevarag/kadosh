@@ -9,10 +9,8 @@ class PaymentSessionCreate(BaseModel):
     """Datos requeridos para enviar una venta a la pantalla del cliente."""
 
     sale_id: UUID
-    device_id: str = Field(
-        min_length=1,
-        max_length=120,
-        examples=["tablet-caja-01"],
+    device_id: UUID = Field(
+        examples=["a8d05d54-7d0e-4d82-8dd2-5914e7259d82"],
         description="Identificador de la tablet o pantalla del cliente.",
     )
     customer_message: str | None = Field(
@@ -48,7 +46,7 @@ class PaymentSessionResponse(BaseModel):
     sale_id: UUID
     payment_id: UUID | None
     seller_id: UUID
-    device_id: str
+    device_id: UUID
     status: str
     amount: Decimal
     currency: str

@@ -19,22 +19,18 @@ router = APIRouter(prefix="/return-culqi", tags=["Return Culqi"])
 
 
 def authorize_return_device(
-    db: Session, session_id: UUID, device_id: str, device_token: str
+    db: Session, session_id: UUID, device_id: UUID, device_token: str
 ) -> None:
     session = db.get(ReturnSettlementSession, session_id)
     if session is None:
         raise HTTPException(status_code=404, detail="Sesion de diferencia no encontrada.")
-    try:
-        parsed_device_id = UUID(device_id)
-    except ValueError as exc:
-        raise HTTPException(status_code=401, detail="Tablet invalida.") from exc
-    if session.device_id != parsed_device_id:
+    if session.device_id != device_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="La diferencia no pertenece a esta tablet.",
         )
     CustomerDisplayDeviceService().validate_device_token(
-        db, device_id=parsed_device_id, device_token=device_token
+        db, device_id=device_id, device_token=device_token
     )
 
 
@@ -42,7 +38,7 @@ def authorize_return_device(
 def create_charge(
     payload: ReturnCulqiChargeCreate,
     db: Session = Depends(get_db),
-    device_id: str = Header(alias="X-Device-Id"),
+    device_id: UUID = Header(alias="X-Device-Id"),
     device_token: str = Header(alias="X-Device-Token"),
 ) -> ReturnCulqiChargeResponse:
     authorize_return_device(
@@ -55,7 +51,7 @@ def create_charge(
 def create_order(
     payload: ReturnCulqiOrderCreate,
     db: Session = Depends(get_db),
-    device_id: str = Header(alias="X-Device-Id"),
+    device_id: UUID = Header(alias="X-Device-Id"),
     device_token: str = Header(alias="X-Device-Token"),
 ) -> ReturnCulqiOrderResponse:
     authorize_return_device(
@@ -68,7 +64,7 @@ def create_order(
 def confirm_order(
     payload: ReturnCulqiOrderConfirm,
     db: Session = Depends(get_db),
-    device_id: str = Header(alias="X-Device-Id"),
+    device_id: UUID = Header(alias="X-Device-Id"),
     device_token: str = Header(alias="X-Device-Token"),
 ) -> ReturnCulqiOrderResponse:
     authorize_return_device(

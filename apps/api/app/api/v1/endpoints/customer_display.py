@@ -54,7 +54,7 @@ def list_active_sessions_for_customer_display(
     ReturnCulqiService(db).expire_stale_for_device(device_id)
     expired_sale_sessions = list(db.scalars(
         select(PaymentSession).where(
-            PaymentSession.device_id == str(device_id),
+            PaymentSession.device_uuid == device_id,
             PaymentSession.status.in_([
                 "CREATED", "SENT_TO_CUSTOMER", "CUSTOMER_VIEWING"
             ]),
@@ -74,7 +74,7 @@ def list_active_sessions_for_customer_display(
         select(PaymentSession)
         .options(selectinload(PaymentSession.sale).selectinload(Sale.items))
         .where(
-            PaymentSession.device_id == str(device_id),
+            PaymentSession.device_uuid == device_id,
             PaymentSession.status.in_(
                 [
                     "CREATED",
@@ -175,7 +175,7 @@ def get_customer_display_receipt(
     payment_session = db.scalar(
         select(PaymentSession).where(
             PaymentSession.id == payment_session_id,
-            PaymentSession.device_id == str(device_id),
+            PaymentSession.device_uuid == device_id,
         )
     )
 

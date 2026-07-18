@@ -22,27 +22,20 @@ router = APIRouter(prefix="/culqi", tags=["Culqi"])
 def authorize_device(
     db: Session,
     payment_session_id: UUID,
-    device_id: str,
+    device_id: UUID,
     device_token: str,
 ) -> None:
     payment_session = PaymentSessionRepository(db).find_by_id(payment_session_id)
     if payment_session is None:
         raise HTTPException(status_code=404, detail="Sesion de pago no encontrada.")
-    if payment_session.device_id != device_id:
+    if payment_session.device_uuid != device_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="La sesion de pago no pertenece a esta tablet.",
         )
-    try:
-        parsed_device_id = UUID(device_id)
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="La identidad de la tablet no es valida.",
-        ) from exc
     CustomerDisplayDeviceService().validate_device_token(
         db,
-        device_id=parsed_device_id,
+        device_id=device_id,
         device_token=device_token,
     )
 
@@ -55,7 +48,7 @@ def authorize_device(
 def create_culqi_charge(
     payload: CulqiChargeCreate,
     db: Session = Depends(get_db),
-    device_id: str = Header(alias="X-Device-Id"),
+    device_id: UUID = Header(alias="X-Device-Id"),
     device_token: str = Header(alias="X-Device-Token"),
 ) -> CulqiChargeResponse:
     authorize_device(db, payload.payment_session_id, device_id, device_token)
@@ -72,7 +65,7 @@ def create_culqi_charge(
 def create_culqi_order(
     payload: CulqiOrderCreate,
     db: Session = Depends(get_db),
-    device_id: str = Header(alias="X-Device-Id"),
+    device_id: UUID = Header(alias="X-Device-Id"),
     device_token: str = Header(alias="X-Device-Token"),
 ) -> CulqiOrderCreateResponse:
     authorize_device(db, payload.payment_session_id, device_id, device_token)
@@ -89,7 +82,7 @@ def create_culqi_order(
 def confirm_culqi_order(
     payload: CulqiOrderConfirm,
     db: Session = Depends(get_db),
-    device_id: str = Header(alias="X-Device-Id"),
+    device_id: UUID = Header(alias="X-Device-Id"),
     device_token: str = Header(alias="X-Device-Token"),
 ) -> CulqiOrderConfirmResponse:
     authorize_device(db, payload.payment_session_id, device_id, device_token)

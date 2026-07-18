@@ -54,7 +54,7 @@ class PaymentSessionRepository:
 
         return list(self.db.scalars(statement).all())
 
-    def find_active_by_device_id(self, device_id: str) -> list[PaymentSession]:
+    def find_active_by_device_id(self, device_id: UUID) -> list[PaymentSession]:
         """Obtiene sesiones activas enviadas a una tablet o pantalla de cliente."""
 
         active_statuses = {
@@ -67,7 +67,7 @@ class PaymentSessionRepository:
         statement = (
             select(PaymentSession)
             .where(
-                PaymentSession.device_id == device_id,
+                PaymentSession.device_uuid == device_id,
                 PaymentSession.status.in_(active_statuses),
             )
             .order_by(PaymentSession.created_at.desc())

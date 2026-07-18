@@ -2,7 +2,7 @@ from datetime import datetime
 from decimal import Decimal
 from uuid import UUID
 
-from sqlalchemy import DateTime, ForeignKey, Numeric, String
+from sqlalchemy import Computed, DateTime, ForeignKey, Numeric, String
 from sqlalchemy.dialects.postgresql import UUID as PostgresUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -42,6 +42,18 @@ class PaymentSession(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
     device_id: Mapped[str] = mapped_column(
         String(100),
+        nullable=False,
+        index=True,
+    )
+
+    device_uuid: Mapped[UUID] = mapped_column(
+        PostgresUUID(as_uuid=True),
+        ForeignKey(
+            "customer_display_devices.id",
+            onupdate="RESTRICT",
+            ondelete="RESTRICT",
+        ),
+        Computed("device_id::uuid", persisted=True),
         nullable=False,
         index=True,
     )

@@ -82,19 +82,11 @@ class PaymentSessionService:
 
         return self.payment_session_repository.find_by_sale_id(sale_id)
 
-    def list_active_sessions_by_device(self, device_id: str) -> list[PaymentSession]:
+    def list_active_sessions_by_device(self, device_id: UUID) -> list[PaymentSession]:
         """Lista sesiones activas enviadas a una tablet o pantalla de cliente."""
 
-        normalized_device_id = device_id.strip()
-
-        if not normalized_device_id:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="El identificador del dispositivo es obligatorio.",
-            )
-
         return self.payment_session_repository.find_active_by_device_id(
-            normalized_device_id
+            device_id
         )
 
     def create_payment_session(
@@ -128,7 +120,7 @@ class PaymentSessionService:
             sale_id=sale.id,
             payment_id=None,
             seller_id=current_user.id,
-            device_id=payload.device_id.strip(),
+            device_id=str(payload.device_id),
             status="SENT_TO_CUSTOMER",
             amount=sale.total,
             currency="PEN",
@@ -156,7 +148,7 @@ class PaymentSessionService:
                 current_user=current_user,
                 new_values={
                     "sale_id": str(created_session.sale_id),
-                    "device_id": created_session.device_id,
+                    "device_id": str(created_session.device_uuid),
                     "status": created_session.status,
                     "amount": str(created_session.amount),
                     "currency": created_session.currency,

@@ -45,7 +45,7 @@ def list_payment_sessions_by_sale(
     response_model=list[PaymentSessionResponse],
 )
 def list_active_sessions_by_device(
-    device_id: str,
+    device_id: UUID,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles("ADMIN", "SELLER", "CASHIER")),
 ) -> list[PaymentSessionResponse]:
