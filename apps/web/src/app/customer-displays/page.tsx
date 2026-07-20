@@ -8,6 +8,7 @@ import {
   MonitorSmartphone,
   Plus,
   PowerOff,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -62,26 +63,32 @@ export default function CustomerDisplaysPage() {
   const [isGeneratingCode, setIsGeneratingCode] = useState(false);
   const [isDeactivatingDeviceId, setIsDeactivatingDeviceId] = useState("");
 
-  const loadDevices = useCallback(async () => {
+  const loadDevices = useCallback(async (background = false) => {
     if (!token) {
       return;
     }
 
     try {
-      setIsLoading(true);
+      if (!background) {
+        setIsLoading(true);
+      }
 
       const response = await customerDisplayDeviceService.listDevices(token);
 
       setDevices(response);
     } catch (error) {
-      const message =
-        error instanceof ApiClientError
-          ? error.message
-          : "No se pudieron cargar las tablets.";
+      if (!background) {
+        const message =
+          error instanceof ApiClientError
+            ? error.message
+            : "No se pudieron cargar las tablets.";
 
-      toast.error(message);
+        toast.error(message);
+      }
     } finally {
-      setIsLoading(false);
+      if (!background) {
+        setIsLoading(false);
+      }
     }
   }, [token]);
 
@@ -92,14 +99,41 @@ export default function CustomerDisplaysPage() {
       return;
     }
 
-    const timeoutId = window.setTimeout(() => {
+    const initialLoadId = window.setTimeout(() => {
       void loadDevices();
     }, 0);
 
     return () => {
-      window.clearTimeout(timeoutId);
+      window.clearTimeout(initialLoadId);
     };
   }, [isAuthenticated, loadDevices, router]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !token) {
+      return;
+    }
+
+    const refreshIntervalId = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        void loadDevices(true);
+      }
+    }, pairingCode ? 3000 : 5000);
+
+    const refreshVisibleDevices = () => {
+      if (document.visibilityState === "visible") {
+        void loadDevices(true);
+      }
+    };
+
+    window.addEventListener("focus", refreshVisibleDevices);
+    document.addEventListener("visibilitychange", refreshVisibleDevices);
+
+    return () => {
+      window.clearInterval(refreshIntervalId);
+      window.removeEventListener("focus", refreshVisibleDevices);
+      document.removeEventListener("visibilitychange", refreshVisibleDevices);
+    };
+  }, [isAuthenticated, loadDevices, pairingCode, token]);
 
   async function handleCreatePairingCode(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -231,10 +265,16 @@ export default function CustomerDisplaysPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MonitorSmartphone className="h-5 w-5" />
-              Tablets vinculadas
-            </CardTitle>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <CardTitle className="flex items-center gap-2">
+                <MonitorSmartphone className="h-5 w-5" />
+                Tablets vinculadas
+              </CardTitle>
+              <div className="flex items-center gap-2 text-xs text-slate-500">
+                <RefreshCw className="h-3.5 w-3.5" />
+                Sincronización automática
+              </div>
+            </div>
           </CardHeader>
 
           <CardContent>
