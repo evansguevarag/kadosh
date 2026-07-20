@@ -26,7 +26,7 @@ router = APIRouter(prefix="/scanner-sessions", tags=["Scanner Sessions"])
 def create_scanner_session(
     payload: ScannerSessionCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles("ADMIN", "SELLER", "CASHIER")),
+    current_user: User = Depends(require_roles("ADMIN", "EMPLOYEE")),
 ) -> ScannerSessionCreateResponse:
     service = ScannerSessionService(db)
 
@@ -38,7 +38,7 @@ def poll_scanner_session(
     session_id: UUID,
     after_scan_id: UUID | None = Query(default=None),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles("ADMIN", "SELLER", "CASHIER")),
+    current_user: User = Depends(require_roles("ADMIN", "EMPLOYEE")),
 ) -> ScannerSessionPollResponse:
     service = ScannerSessionService(db)
 

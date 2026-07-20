@@ -17,7 +17,8 @@ const AUTH_USER_STORAGE_KEY = "kadosh_auth_user";
 
 type AuthUserApiResponse = AuthUser & {
   first_name?: string | null;
-  last_name?: string | null;
+  paternal_last_name?: string | null;
+  maternal_last_name?: string | null;
   role?: string | null;
   role_name?: string | null;
   full_name?: string | null;
@@ -29,8 +30,9 @@ function canUseBrowserStorage(): boolean {
 
 function normalizeAuthUser(user: AuthUserApiResponse): AuthUser {
   const firstName = user.first_name?.trim() ?? "";
-  const lastName = user.last_name?.trim() ?? "";
-  const generatedFullName = `${firstName} ${lastName}`.trim();
+  const paternalLastName = user.paternal_last_name?.trim() ?? "";
+  const maternalLastName = user.maternal_last_name?.trim() ?? "";
+  const generatedFullName = `${firstName} ${paternalLastName} ${maternalLastName}`.trim();
 
   return {
     ...user,

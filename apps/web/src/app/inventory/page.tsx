@@ -107,7 +107,8 @@ function formatDelta(delta: number) {
 
 export default function InventoryPage() {
   const router = useRouter();
-  const { token, isAuthenticated } = useAuth();
+  const { token, isAuthenticated, user } = useAuth();
+  const isAdmin = user?.role === "ADMIN" || user?.role_name === "ADMIN";
 
   const [variants, setVariants] = useState<ProductVariant[]>([]);
   const [movements, setMovements] = useState<InventoryMovement[]>([]);
@@ -366,7 +367,7 @@ export default function InventoryPage() {
 
       <div className="mt-6 space-y-6">
         <div className="flex flex-wrap gap-2 rounded-xl border bg-white p-2">
-          {inventoryTabs.map((tab) => (
+          {inventoryTabs.filter((tab) => isAdmin || tab !== "AJUSTES").map((tab) => (
             <Button
               key={tab}
               type="button"
@@ -493,7 +494,7 @@ export default function InventoryPage() {
           </Card>
         ) : null}
 
-        {activeTab === "AJUSTES" ? (
+        {activeTab === "AJUSTES" && isAdmin ? (
           <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">

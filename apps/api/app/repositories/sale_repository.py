@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from app.models.sale import Sale
+from app.models.user import User
 
 
 class SaleRepository:
@@ -12,13 +13,24 @@ class SaleRepository:
     def __init__(self, db: Session) -> None:
         self.db = db
 
-    def find_all(self, *, limit: int = 100, offset: int = 0) -> list[Sale]:
+    def find_all(
+        self,
+        *,
+        limit: int = 100,
+        offset: int = 0,
+        seller_id: UUID | None = None,
+    ) -> list[Sale]:
         """Obtiene todas las ventas con sus items."""
 
+        statement = select(Sale).options(
+            selectinload(Sale.items),
+            selectinload(Sale.customer),
+            selectinload(Sale.seller).selectinload(User.role),
+        )
+        if seller_id is not None:
+            statement = statement.where(Sale.seller_id == seller_id)
         statement = (
-            select(Sale)
-            .options(selectinload(Sale.items), selectinload(Sale.customer))
-            .order_by(Sale.created_at.desc())
+            statement.order_by(Sale.created_at.desc())
             .offset(offset)
             .limit(limit)
         )
@@ -30,7 +42,11 @@ class SaleRepository:
 
         statement = (
             select(Sale)
-            .options(selectinload(Sale.items), selectinload(Sale.customer))
+            .options(
+                selectinload(Sale.items),
+                selectinload(Sale.customer),
+                selectinload(Sale.seller).selectinload(User.role),
+            )
             .where(Sale.id == sale_id)
         )
 
@@ -41,7 +57,11 @@ class SaleRepository:
 
         statement = (
             select(Sale)
-            .options(selectinload(Sale.items), selectinload(Sale.customer))
+            .options(
+                selectinload(Sale.items),
+                selectinload(Sale.customer),
+                selectinload(Sale.seller).selectinload(User.role),
+            )
             .where(Sale.id == sale_id)
             .with_for_update()
         )
@@ -53,7 +73,11 @@ class SaleRepository:
 
         statement = (
             select(Sale)
-            .options(selectinload(Sale.items), selectinload(Sale.customer))
+            .options(
+                selectinload(Sale.items),
+                selectinload(Sale.customer),
+                selectinload(Sale.seller).selectinload(User.role),
+            )
             .where(Sale.sale_number == sale_number)
         )
 
@@ -66,6 +90,7 @@ class SaleRepository:
                 selectinload(Sale.items),
                 selectinload(Sale.customer),
                 selectinload(Sale.payments),
+                selectinload(Sale.seller).selectinload(User.role),
             )
             .where(Sale.receipt_token == receipt_token)
         )

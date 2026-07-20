@@ -92,7 +92,8 @@ def get_me(
     return AuthUserResponse(
         id=current_user.id,
         first_name=current_user.first_name,
-        last_name=current_user.last_name,
+        paternal_last_name=current_user.paternal_last_name,
+        maternal_last_name=current_user.maternal_last_name,
         email=current_user.email,
         role=role_name,
         status=current_user.status,

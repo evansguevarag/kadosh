@@ -72,6 +72,10 @@ function formatCustomerName(sale: Sale) {
   return `${sale.customer.first_name} ${sale.customer.last_name || ""}`.trim();
 }
 
+function formatSellerName(sale: Sale) {
+  return `${sale.seller.first_name} ${sale.seller.paternal_last_name} ${sale.seller.maternal_last_name}`.trim();
+}
+
 export default function SalesPage() {
   const router = useRouter();
   const { token, isAuthenticated } = useAuth();
@@ -80,9 +84,15 @@ export default function SalesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] =
     useState<(typeof saleStatusFilters)[number]["value"]>("ALL");
+  const [sellerFilter, setSellerFilter] = useState("ALL");
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const deferredSearchTerm = useDeferredValue(searchTerm);
+  const sellers = useMemo(() => {
+    const unique = new Map<string, string>();
+    sales.forEach((sale) => unique.set(sale.seller.id, formatSellerName(sale)));
+    return [...unique.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  }, [sales]);
 
   const filteredSales = useMemo(() => {
     const normalizedSearch = deferredSearchTerm.trim().toLowerCase();
@@ -90,8 +100,9 @@ export default function SalesPage() {
     return sales.filter((sale) => {
       const matchesStatus =
         statusFilter === "ALL" || sale.status === statusFilter;
+      const matchesSeller = sellerFilter === "ALL" || sale.seller.id === sellerFilter;
 
-      if (!matchesStatus) {
+      if (!matchesStatus || !matchesSeller) {
         return false;
       }
 
@@ -105,11 +116,12 @@ export default function SalesPage() {
         sale.customer?.document_number,
         sale.customer?.first_name,
         sale.customer?.last_name,
+        formatSellerName(sale),
       ]
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(normalizedSearch));
     });
-  }, [sales, deferredSearchTerm, statusFilter]);
+  }, [sales, deferredSearchTerm, sellerFilter, statusFilter]);
 
   const loadSales = useCallback(
     async (showToast = false) => {
@@ -201,6 +213,16 @@ export default function SalesPage() {
                 />
               </div>
 
+              <select
+                aria-label="Filtrar por responsable"
+                className="h-9 min-w-48 rounded-md border bg-white px-3 text-sm"
+                value={sellerFilter}
+                onChange={(event) => setSellerFilter(event.target.value)}
+              >
+                <option value="ALL">Todos los responsables</option>
+                {sellers.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+              </select>
+
               <div className="flex flex-wrap gap-2">
                 {saleStatusFilters.map((filter) => (
                   <Button
@@ -244,6 +266,9 @@ export default function SalesPage() {
                           <p className="mt-1 text-xs text-slate-500">
                             {formatDateTime(sale.created_at)}
                           </p>
+                          <p className="mt-1 truncate text-xs text-slate-500">
+                            Atendido por {formatSellerName(sale)}
+                          </p>
                         </div>
                         <Badge variant={statusBadgeVariant(sale.status)}>
                           {formatSaleStatus(sale.status)}
@@ -277,6 +302,7 @@ export default function SalesPage() {
                       <TableHead>Fecha</TableHead>
                       <TableHead>Venta</TableHead>
                       <TableHead>Cliente</TableHead>
+                      <TableHead>Responsable</TableHead>
                       <TableHead>Artículos</TableHead>
                       <TableHead>Total</TableHead>
                       <TableHead>Estado</TableHead>
@@ -302,6 +328,7 @@ export default function SalesPage() {
                             ) : null}
                           </div>
                         </TableCell>
+                        <TableCell>{formatSellerName(sale)}</TableCell>
                         <TableCell>{sale.items.length}</TableCell>
                         <TableCell>{formatMoney(sale.total)}</TableCell>
                         <TableCell>

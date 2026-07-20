@@ -44,18 +44,19 @@ execute function public.set_updated_at();
 
 -- =========================================================
 -- TABLA: users
--- Usuarios internos del sistema: administrador, vendedor, cajero
+-- Usuarios internos del sistema: administradores y empleados
 -- =========================================================
 
 create table if not exists public.users (
     id uuid primary key default gen_random_uuid(),
     role_id uuid not null,
     first_name varchar(100) not null,
-    last_name varchar(100) not null,
+    paternal_last_name varchar(100) not null,
+    maternal_last_name varchar(100) not null,
     email varchar(150) not null unique,
     password_hash varchar(255) not null,
-    document_number varchar(20),
-    phone varchar(30),
+    document_number varchar(8) not null,
+    phone varchar(9) not null,
     status varchar(30) not null default 'ACTIVE',
     is_active boolean not null default true,
     last_login_at timestamptz,
@@ -77,11 +78,22 @@ create table if not exists public.users (
     constraint chk_users_first_name_not_empty
         check (length(trim(first_name)) > 0),
 
-    constraint chk_users_last_name_not_empty
-        check (length(trim(last_name)) > 0)
+    constraint chk_users_paternal_last_name_not_empty
+        check (length(trim(paternal_last_name)) > 0),
+
+    constraint chk_users_maternal_last_name_not_empty
+        check (length(trim(maternal_last_name)) > 0),
+
+    constraint chk_users_document_number_format
+        check (document_number ~ '^\d{8}$'),
+
+    constraint chk_users_phone_format
+        check (phone ~ '^9\d{8}$')
 );
 
 create index if not exists idx_users_role_id on public.users(role_id);
+create unique index if not exists uq_users_document_number
+    on public.users(document_number);
 create index if not exists idx_users_email on public.users(email);
 
 drop trigger if exists trg_users_updated_at on public.users;
@@ -692,8 +704,7 @@ $$;
 insert into public.roles (name, description)
 values
     ('ADMIN', 'Administrador del sistema con acceso completo.'),
-    ('SELLER', 'Vendedor encargado de registrar ventas.'),
-    ('CASHIER', 'Cajero encargado de procesar pagos.')
+    ('EMPLOYEE', 'Empleado encargado de ventas, cobros y atencion operativa.')
 on conflict (name) do nothing;
 
 insert into public.categories (name, description)

@@ -89,6 +89,16 @@ class SaleCustomerResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class SaleSellerResponse(BaseModel):
+    """Usuario interno responsable de la venta."""
+
+    id: UUID
+    first_name: str
+    paternal_last_name: str
+    maternal_last_name: str
+    model_config = ConfigDict(from_attributes=True)
+
+
 class SaleResponse(BaseModel):
     """Respuesta pública de una venta."""
 
@@ -109,5 +119,6 @@ class SaleResponse(BaseModel):
     updated_at: datetime
     items: list[SaleItemResponse] = Field(default_factory=list)
     customer: SaleCustomerResponse | None = None
+    seller: SaleSellerResponse
 
     model_config = ConfigDict(from_attributes=True)

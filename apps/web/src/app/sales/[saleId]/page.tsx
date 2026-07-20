@@ -58,6 +58,10 @@ function formatCustomerName(sale: Sale) {
   return `${sale.customer.first_name} ${sale.customer.last_name || ""}`.trim();
 }
 
+function formatSellerName(sale: Sale) {
+  return `${sale.seller.first_name} ${sale.seller.paternal_last_name} ${sale.seller.maternal_last_name}`.trim();
+}
+
 function formatItemDescription(item: Sale["items"][number]) {
   const details = [item.product_name, item.size, item.color]
     .filter(Boolean)
@@ -167,6 +171,7 @@ export default function SaleDetailPage() {
                 </CardHeader>
                 <CardContent className="space-y-2 text-sm">
                   <InfoRow label="Número" value={sale.sale_number} />
+                  <InfoRow label="Responsable" value={formatSellerName(sale)} />
                   <InfoRow label="Creada" value={formatDateTime(sale.created_at)} />
                   <InfoRow label="Pagada" value={formatDateTime(sale.paid_at)} />
                 </CardContent>
@@ -369,19 +374,17 @@ function SaleReceiptPrintView({ sale }: { sale: Sale }) {
               {sale.customer.document_type || "Documento"}:{" "}
               {sale.customer.document_number || "-"}
             </p>
-            {sale.customer.phone || sale.customer.email ? (
-              <p className="mt-1 text-slate-600">
-                {[sale.customer.phone, sale.customer.email]
-                  .filter(Boolean)
-                  .join(" | ")}
-              </p>
-            ) : null}
           </div>
         ) : (
           <div className="mt-4 rounded-lg border border-slate-300 p-3 text-sm">
             <p className="font-semibold">Cliente: Público general</p>
           </div>
         )}
+
+        <p className="mt-2 text-sm">
+          <span className="text-slate-500">Vendedor:</span>{" "}
+          <span className="font-semibold">{formatSellerName(sale)}</span>
+        </p>
 
         <table className="mt-6 w-full border-collapse text-sm">
           <thead>

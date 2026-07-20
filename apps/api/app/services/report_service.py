@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.models.payment import Payment
 from app.models.product_variant import ProductVariant
 from app.models.sale import Sale
+from app.models.user import User
 from app.schemas.report import (
     LowStockProductResponse,
     ReportsDashboardResponse,
@@ -23,10 +24,13 @@ class ReportService:
     def __init__(self, db: Session) -> None:
         self.db = db
 
-    def get_dashboard_report(self) -> ReportsDashboardResponse:
+    def get_dashboard_report(self, current_user: User) -> ReportsDashboardResponse:
         """Genera un resumen general para el dashboard del POS."""
 
-        sales = self.db.query(Sale).all()
+        sales_query = self.db.query(Sale)
+        if current_user.role.name == "EMPLOYEE":
+            sales_query = sales_query.filter(Sale.seller_id == current_user.id)
+        sales = sales_query.all()
         variants = self.db.query(ProductVariant).all()
 
         sales_summary = self._build_sales_summary(sales)
@@ -61,6 +65,7 @@ class ReportService:
             .options(
                 selectinload(Sale.items),
                 selectinload(Sale.customer),
+                selectinload(Sale.seller).selectinload(User.role),
             )
             .where(
                 Sale.created_at >= start_at,

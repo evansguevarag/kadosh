@@ -51,7 +51,8 @@ function formatDate(value: string | null) {
 
 export default function CustomerDisplaysPage() {
   const router = useRouter();
-  const { token, isAuthenticated } = useAuth();
+  const { token, isAuthenticated, user } = useAuth();
+  const isAdmin = user?.role === "ADMIN" || user?.role_name === "ADMIN";
 
   const [devices, setDevices] = useState<CustomerDisplayDevice[]>([]);
   const [deviceName, setDeviceName] = useState("Tablet Caja 1");
@@ -163,10 +164,10 @@ export default function CustomerDisplaysPage() {
   return (
     <AppShell
       title="Pantallas cliente"
-      description="Vincula tablets y administra los dispositivos autorizados."
+      description={isAdmin ? "Vincula tablets y administra los dispositivos autorizados." : "Consulta las tablets disponibles para enviar cobros desde Caja."}
     >
-      <div className="grid gap-6 xl:grid-cols-[0.9fr_1.5fr]">
-        <Card>
+      <div className={`grid gap-6 ${isAdmin ? "xl:grid-cols-[0.9fr_1.5fr]" : "grid-cols-1"}`}>
+        {isAdmin ? <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Plus className="h-5 w-5" />
@@ -226,7 +227,7 @@ export default function CustomerDisplaysPage() {
               </div>
             ) : null}
           </CardContent>
-        </Card>
+        </Card> : null}
 
         <Card>
           <CardHeader>
@@ -264,7 +265,7 @@ export default function CustomerDisplaysPage() {
                           {device.is_active ? "Activa" : "Desactivada"}
                         </Badge>
                       </div>
-                      <Button
+                      {isAdmin ? <Button
                         className="mt-3 w-full"
                         size="sm"
                         variant="outline"
@@ -280,7 +281,7 @@ export default function CustomerDisplaysPage() {
                           <PowerOff className="h-4 w-4" />
                         )}
                         Desactivar
-                      </Button>
+                      </Button> : null}
                     </div>
                   ))}
                 </div>
@@ -292,7 +293,7 @@ export default function CustomerDisplaysPage() {
                       <TableHead>Tablet</TableHead>
                       <TableHead>Estado</TableHead>
                       <TableHead>Última conexión</TableHead>
-                      <TableHead />
+                      {isAdmin ? <TableHead /> : null}
                     </TableRow>
                   </TableHeader>
 
@@ -306,8 +307,8 @@ export default function CustomerDisplaysPage() {
                           {device.is_active ? "Activa" : "Desactivada"}
                         </TableCell>
                         <TableCell>{formatDate(device.last_seen_at)}</TableCell>
-                        <TableCell className="text-right">
-                          <Button
+                        {isAdmin ? <TableCell className="text-right">
+                          {isAdmin ? <Button
                             size="sm"
                             variant="outline"
                             disabled={
@@ -324,8 +325,8 @@ export default function CustomerDisplaysPage() {
                                 Desactivar
                               </>
                             )}
-                          </Button>
-                        </TableCell>
+                          </Button> : null}
+                        </TableCell> : null}
                       </TableRow>
                     ))}
                   </TableBody>

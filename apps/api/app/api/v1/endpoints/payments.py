@@ -17,7 +17,7 @@ def list_payments(
     limit: int = Query(default=100, ge=1, le=500),
     offset: int = Query(default=0, ge=0),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles("ADMIN", "SELLER", "CASHIER")),
+    current_user: User = Depends(require_roles("ADMIN", "EMPLOYEE")),
 ) -> list[PaymentResponse]:
     service = PaymentService(db)
 
@@ -28,7 +28,7 @@ def list_payments(
 def list_payments_by_sale(
     sale_id: UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles("ADMIN", "SELLER", "CASHIER")),
+    current_user: User = Depends(require_roles("ADMIN", "EMPLOYEE")),
 ) -> list[PaymentResponse]:
     service = PaymentService(db)
 
@@ -39,7 +39,7 @@ def list_payments_by_sale(
 def get_payment(
     payment_id: UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles("ADMIN", "SELLER", "CASHIER")),
+    current_user: User = Depends(require_roles("ADMIN", "EMPLOYEE")),
 ) -> PaymentResponse:
     service = PaymentService(db)
 
@@ -54,7 +54,7 @@ def get_payment(
 def register_manual_payment(
     payload: PaymentCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles("ADMIN", "SELLER", "CASHIER")),
+    current_user: User = Depends(require_roles("ADMIN", "EMPLOYEE")),
 ) -> PaymentResponse:
     service = PaymentService(db)
 

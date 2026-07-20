@@ -20,7 +20,7 @@ router = APIRouter(prefix="/categories", tags=["Categories"])
 @router.get("", response_model=list[CategoryResponse])
 def list_categories(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles("ADMIN", "SELLER", "CASHIER")),
+    current_user: User = Depends(require_roles("ADMIN", "EMPLOYEE")),
 ) -> list[CategoryResponse]:
     service = CategoryService(db)
 
@@ -41,7 +41,7 @@ def list_categories_for_management(
 def get_category(
     category_id: UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles("ADMIN", "SELLER", "CASHIER")),
+    current_user: User = Depends(require_roles("ADMIN", "EMPLOYEE")),
 ) -> CategoryResponse:
     service = CategoryService(db)
 

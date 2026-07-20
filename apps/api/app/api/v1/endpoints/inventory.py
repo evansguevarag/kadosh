@@ -23,7 +23,7 @@ def list_inventory_movements(
     limit: int = Query(default=100, ge=1, le=500),
     offset: int = Query(default=0, ge=0),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles("ADMIN", "SELLER", "CASHIER")),
+    current_user: User = Depends(require_roles("ADMIN", "EMPLOYEE")),
 ) -> list[InventoryMovementResponse]:
     service = InventoryService(db)
 
@@ -37,7 +37,7 @@ def list_inventory_movements(
 def list_inventory_movements_by_variant(
     product_variant_id: UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles("ADMIN", "SELLER", "CASHIER")),
+    current_user: User = Depends(require_roles("ADMIN", "EMPLOYEE")),
 ) -> list[InventoryMovementResponse]:
     service = InventoryService(db)
 
@@ -52,7 +52,7 @@ def list_inventory_movements_by_variant(
 def register_inventory_movement(
     payload: InventoryMovementCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles("ADMIN", "SELLER")),
+    current_user: User = Depends(require_roles("ADMIN")),
 ) -> InventoryMovementResponse:
     service = InventoryService(db)
 

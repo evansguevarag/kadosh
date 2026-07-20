@@ -11,7 +11,7 @@ router = APIRouter(prefix="/document-lookup", tags=["Document Lookup"])
 @router.get("/dni/{dni}", response_model=DniLookupResponse)
 def lookup_dni(
     dni: str,
-    current_user: User = Depends(require_roles("ADMIN", "SELLER", "CASHIER")),
+    current_user: User = Depends(require_roles("ADMIN", "EMPLOYEE")),
 ) -> DniLookupResponse:
     service = DocumentLookupService()
 

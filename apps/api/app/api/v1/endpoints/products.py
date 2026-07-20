@@ -15,7 +15,7 @@ router = APIRouter(prefix="/products", tags=["Products"])
 @router.get("", response_model=list[ProductResponse])
 def list_products(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles("ADMIN", "SELLER", "CASHIER")),
+    current_user: User = Depends(require_roles("ADMIN", "EMPLOYEE")),
 ) -> list[ProductResponse]:
     service = ProductService(db)
 
@@ -26,7 +26,7 @@ def list_products(
 def get_product(
     product_id: UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles("ADMIN", "SELLER", "CASHIER")),
+    current_user: User = Depends(require_roles("ADMIN", "EMPLOYEE")),
 ) -> ProductResponse:
     service = ProductService(db)
 

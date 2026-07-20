@@ -81,13 +81,12 @@ class AuthService:
         user = User(
             role_id=admin_role.id,
             first_name=payload.first_name.strip(),
-            last_name=payload.last_name.strip(),
+            paternal_last_name=payload.paternal_last_name.strip(),
+            maternal_last_name=payload.maternal_last_name.strip(),
             email=normalized_email,
             password_hash=hash_password(payload.password),
-            document_number=payload.document_number.strip()
-            if payload.document_number
-            else None,
-            phone=payload.phone.strip() if payload.phone else None,
+            document_number=payload.document_number.strip(),
+            phone=payload.phone.strip(),
             status="ACTIVE",
             is_active=True,
         )
@@ -243,7 +242,8 @@ class AuthService:
         return AuthUserResponse(
             id=user.id,
             first_name=user.first_name,
-            last_name=user.last_name,
+            paternal_last_name=user.paternal_last_name,
+            maternal_last_name=user.maternal_last_name,
             email=user.email,
             role=role_name,
             status=user.status,

@@ -2316,19 +2316,19 @@ function ManualReceiptPrintView({ receipt }: { receipt: ManualReceipt }) {
               {sale.customer.document_type || "Documento"}:{" "}
               {sale.customer.document_number || "-"}
             </p>
-            {sale.customer.phone || sale.customer.email ? (
-              <p className="mt-1 text-slate-600">
-                {[sale.customer.phone, sale.customer.email]
-                  .filter(Boolean)
-                  .join(" | ")}
-              </p>
-            ) : null}
           </div>
         ) : (
           <div className="mt-4 rounded-lg border border-slate-300 p-3 text-sm">
             <p className="font-semibold">Cliente: Público general</p>
           </div>
         )}
+
+        <p className="mt-2 text-sm">
+          <span className="text-slate-500">Vendedor:</span>{" "}
+          <span className="font-semibold">
+            {sale.seller.first_name.split(/\s+/)[0]} {sale.seller.paternal_last_name}
+          </span>
+        </p>
 
         <table className="mt-6 w-full border-collapse text-sm">
           <thead>

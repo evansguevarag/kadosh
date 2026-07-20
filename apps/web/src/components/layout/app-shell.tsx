@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   BarChart3,
   Boxes,
+  ChevronDown,
   CreditCard,
   LayoutDashboard,
   Loader2,
@@ -19,9 +20,17 @@ import {
   ShoppingBag,
   ShoppingCart,
   Users,
+  UserCog,
+  UserRound,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -39,6 +48,8 @@ type AppShellProps = {
 };
 
 type AuthUserWithProfile = {
+  first_name?: string | null;
+  paternal_last_name?: string | null;
   full_name?: string | null;
   email?: string | null;
   role_name?: string | null;
@@ -50,56 +61,73 @@ const navigationItems = [
     label: "Panel",
     href: "/dashboard",
     icon: LayoutDashboard,
+    roles: ["ADMIN", "EMPLOYEE"],
   },
   {
     label: "Caja",
     href: "/pos",
     icon: ShoppingCart,
+    roles: ["ADMIN", "EMPLOYEE"],
   },
   {
     label: "Ventas",
     href: "/sales",
     icon: ReceiptText,
+    roles: ["ADMIN", "EMPLOYEE"],
   },
   {
     label: "Cambios y devoluciones",
     href: "/returns",
     icon: RefreshCcw,
+    roles: ["ADMIN", "EMPLOYEE"],
   },
   {
     label: "Productos",
     href: "/products",
     icon: Package,
+    roles: ["ADMIN", "EMPLOYEE"],
   },
   {
     label: "Catálogo",
     href: "/product-variants",
     icon: Boxes,
+    roles: ["ADMIN", "EMPLOYEE"],
   },
   {
     label: "Inventario",
     href: "/inventory",
     icon: PackageSearch,
+    roles: ["ADMIN", "EMPLOYEE"],
   },
   {
     label: "Clientes",
     href: "/customers",
     icon: Users,
+    roles: ["ADMIN", "EMPLOYEE"],
   },
   {
     label: "Pagos",
     href: "/payments",
     icon: CreditCard,
+    roles: ["ADMIN", "EMPLOYEE"],
   },
   {
     label: "Pantallas cliente",
     href: "/customer-displays",
     icon: MonitorSmartphone,
+    roles: ["ADMIN", "EMPLOYEE"],
   },
   {
     label: "Reportes",
     href: "/reports",
     icon: BarChart3,
+    roles: ["ADMIN"],
+  },
+  {
+    label: "Usuarios",
+    href: "/users",
+    icon: UserCog,
+    roles: ["ADMIN"],
   },
 ];
 
@@ -112,8 +140,7 @@ function formatRole(roleName?: string | null) {
 
   const roleLabels: Record<string, string> = {
     ADMIN: "Administrador",
-    SELLER: "Vendedor",
-    CASHIER: "Cajero",
+    EMPLOYEE: "Empleado",
   };
 
   return roleLabels[normalizedRole] ?? normalizedRole;
@@ -132,12 +159,34 @@ export function AppShell({ title, description, children }: AppShellProps) {
   const displayName =
     authUser?.full_name || authUser?.email || "Usuario Kadosh";
   const displayRole = formatRole(authUser?.role_name || authUser?.role);
+  const headerName = [
+    authUser?.first_name?.trim().split(/\s+/)[0],
+    authUser?.paternal_last_name,
+  ].filter(Boolean).join(" ") || displayName;
+  const currentRole = (authUser?.role_name || authUser?.role || "").toUpperCase();
+  const visibleNavigationItems = navigationItems.filter((item) =>
+    item.roles.includes(currentRole),
+  );
 
   useEffect(() => {
     if (status === "unauthenticated") {
       router.replace("/login");
     }
   }, [router, status]);
+
+  useEffect(() => {
+    const adminOnlyRoutes = [
+      "/products/categories",
+      "/reports",
+      "/users",
+    ];
+    const isAdminOnlyRoute = adminOnlyRoutes.some(
+      (route) => pathname === route || pathname.startsWith(`${route}/`),
+    );
+    if (status === "authenticated" && currentRole !== "ADMIN" && isAdminOnlyRoute) {
+      router.replace("/dashboard");
+    }
+  }, [currentRole, pathname, router, status]);
 
   function confirmLogout() {
     logout();
@@ -167,7 +216,7 @@ export function AppShell({ title, description, children }: AppShellProps) {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-950">
-      <aside className="fixed left-0 top-0 hidden h-screen w-60 border-r bg-white px-4 py-5 lg:block">
+      <aside className="fixed left-0 top-0 hidden h-screen w-60 flex-col border-r bg-white px-4 py-5 lg:flex">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-950 text-white">
             <ShoppingBag className="h-5 w-5" />
@@ -179,8 +228,8 @@ export function AppShell({ title, description, children }: AppShellProps) {
           </div>
         </div>
 
-        <nav className="mt-7 space-y-1">
-          {navigationItems.map((item) => {
+        <nav className="mt-7 min-h-0 flex-1 space-y-1 overflow-y-auto pb-4">
+          {visibleNavigationItems.map((item) => {
             const Icon = item.icon;
             const isActive =
               pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -202,21 +251,6 @@ export function AppShell({ title, description, children }: AppShellProps) {
           })}
         </nav>
 
-        <div className="absolute bottom-4 left-4 right-4 rounded-xl border bg-slate-50 p-3 text-center">
-          <p className="truncate text-sm font-bold">{displayName}</p>
-          <p className="mt-0.5 text-xs text-slate-500">{displayRole}</p>
-
-          <Button
-            className="mt-3 h-8 w-full text-xs"
-            variant="outline"
-            size="sm"
-            type="button"
-            onClick={requestLogout}
-          >
-            <LogOut className="h-3.5 w-3.5" />
-            Cerrar sesión
-          </Button>
-        </div>
       </aside>
 
       <Dialog open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
@@ -237,7 +271,7 @@ export function AppShell({ title, description, children }: AppShellProps) {
             </div>
 
             <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-4">
-              {navigationItems.map((item) => {
+              {visibleNavigationItems.map((item) => {
                 const Icon = item.icon;
                 const isActive =
                   pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -260,20 +294,6 @@ export function AppShell({ title, description, children }: AppShellProps) {
               })}
             </nav>
 
-            <div className="border-t bg-slate-50 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4">
-              <p className="truncate text-sm font-bold">{displayName}</p>
-              <p className="mt-0.5 text-xs text-slate-500">{displayRole}</p>
-              <Button
-                className="mt-3 w-full"
-                variant="outline"
-                size="sm"
-                type="button"
-                onClick={requestLogout}
-              >
-                <LogOut className="h-4 w-4" />
-                Cerrar sesión
-              </Button>
-            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -305,7 +325,7 @@ export function AppShell({ title, description, children }: AppShellProps) {
 
       <div className="lg:pl-60">
         <header className="sticky top-0 z-20 border-b bg-white/95 px-3 py-3 backdrop-blur sm:px-5 sm:py-4 lg:px-8">
-          <div className="flex min-w-0 items-start gap-3">
+          <div className="flex min-w-0 items-center gap-3">
             <Button
               aria-label="Abrir menú principal"
               className="mt-0.5 lg:hidden"
@@ -324,6 +344,32 @@ export function AppShell({ title, description, children }: AppShellProps) {
                 {description}
               </p>
             </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                aria-label="Abrir menú de usuario"
+                className="group flex shrink-0 items-center gap-2 rounded-md px-1.5 py-1 outline-none focus-visible:ring-2 focus-visible:ring-slate-400 sm:gap-3 sm:px-2"
+              >
+                <div className="hidden min-w-0 text-right sm:block">
+                  <p className="max-w-48 truncate text-sm text-slate-600">
+                    Hola, <span className="font-semibold text-slate-950">{headerName}</span>
+                  </p>
+                  <p className="mt-0.5 text-xs text-slate-500">{displayRole}</p>
+                </div>
+                <span className="flex size-9 items-center justify-center rounded-full bg-slate-950 text-white shadow-sm">
+                  <UserRound className="size-5" />
+                </span>
+                <ChevronDown className="hidden size-4 text-slate-600 transition-transform group-data-[popup-open]:rotate-180 sm:block" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52" sideOffset={8}>
+                <DropdownMenuItem
+                  className="min-h-10 gap-2 px-2.5"
+                  onClick={requestLogout}
+                >
+                  <LogOut className="size-4" />
+                  Cerrar sesión
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </header>
 

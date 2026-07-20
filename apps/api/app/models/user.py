@@ -26,7 +26,12 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, ActiveStatusMixin, Base):
         nullable=False,
     )
 
-    last_name: Mapped[str] = mapped_column(
+    paternal_last_name: Mapped[str] = mapped_column(
+        String(100),
+        nullable=False,
+    )
+
+    maternal_last_name: Mapped[str] = mapped_column(
         String(100),
         nullable=False,
     )
@@ -43,14 +48,14 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, ActiveStatusMixin, Base):
         nullable=False,
     )
 
-    document_number: Mapped[str | None] = mapped_column(
-        String(20),
-        nullable=True,
+    document_number: Mapped[str] = mapped_column(
+        String(8),
+        nullable=False,
     )
 
-    phone: Mapped[str | None] = mapped_column(
-        String(30),
-        nullable=True,
+    phone: Mapped[str] = mapped_column(
+        String(9),
+        nullable=False,
     )
 
     status: Mapped[str] = mapped_column(

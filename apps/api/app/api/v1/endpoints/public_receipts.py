@@ -40,6 +40,10 @@ def get_public_receipt(receipt_token: str, db: Session = Depends(get_db)):
         customer_name=customer_name,
         customer_document_type=customer_document_type,
         customer_document_number=customer_document_number,
+        seller_name=(
+            f"{sale.seller.first_name.split()[0]} "
+            f"{sale.seller.paternal_last_name}"
+        ).strip(),
         payment_method=payment.payment_method if payment else None,
         operation_code=payment.operation_code if payment else None,
         subtotal=sale.subtotal,

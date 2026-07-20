@@ -11,6 +11,7 @@ class PublicReceiptResponse(BaseModel):
     customer_name: str
     customer_document_type: str | None
     customer_document_number: str | None
+    seller_name: str
     payment_method: str | None
     operation_code: str | None
     subtotal: Decimal

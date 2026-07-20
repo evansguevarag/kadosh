@@ -13,6 +13,7 @@ type PublicReceipt = {
   customer_name: string;
   customer_document_type: string | null;
   customer_document_number: string | null;
+  seller_name: string;
   payment_method: string | null;
   operation_code: string | null;
   subtotal: string;
@@ -119,6 +120,7 @@ export default function PublicReceiptPage() {
               <div className="text-right"><p className="text-xs text-slate-500">Fecha</p><p className="font-semibold">{new Date(receipt.paid_at || receipt.created_at).toLocaleString("es-PE")}</p></div>
               <div><p className="text-xs text-slate-500">Medio de pago</p><p className="font-semibold">{paymentMethod(receipt.payment_method)}</p></div>
               <div className="text-right"><p className="text-xs text-slate-500">Operación</p><p className="font-semibold">{receipt.operation_code || "-"}</p></div>
+              <div><p className="text-xs text-slate-500">Vendedor</p><p className="font-semibold">{receipt.seller_name}</p></div>
             </div>
 
             <div className="my-4 rounded-lg border p-3 text-sm">

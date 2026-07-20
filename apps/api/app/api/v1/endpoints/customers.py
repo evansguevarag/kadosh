@@ -20,7 +20,7 @@ router = APIRouter(prefix="/customers", tags=["Customers"])
 @router.get("", response_model=list[CustomerResponse])
 def list_customers(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles("ADMIN", "SELLER", "CASHIER")),
+    current_user: User = Depends(require_roles("ADMIN", "EMPLOYEE")),
 ) -> list[CustomerResponse]:
     service = CustomerService(db)
 
@@ -35,7 +35,7 @@ def get_customer_by_document(
     document_type: str,
     document_number: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles("ADMIN", "SELLER", "CASHIER")),
+    current_user: User = Depends(require_roles("ADMIN", "EMPLOYEE")),
 ) -> CustomerResponse:
     service = CustomerService(db)
 
@@ -49,7 +49,7 @@ def get_customer_by_document(
 def resolve_customer_by_dni(
     dni: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles("ADMIN", "SELLER", "CASHIER")),
+    current_user: User = Depends(require_roles("ADMIN", "EMPLOYEE")),
 ) -> CustomerResolveDniResponse:
     service = CustomerService(db)
     customer, source = service.resolve_dni_customer(dni)
@@ -64,7 +64,7 @@ def resolve_customer_by_dni(
 def get_customer(
     customer_id: UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles("ADMIN", "SELLER", "CASHIER")),
+    current_user: User = Depends(require_roles("ADMIN", "EMPLOYEE")),
 ) -> CustomerResponse:
     service = CustomerService(db)
 
@@ -79,7 +79,7 @@ def get_customer(
 def create_customer(
     payload: CustomerCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles("ADMIN", "SELLER", "CASHIER")),
+    current_user: User = Depends(require_roles("ADMIN", "EMPLOYEE")),
 ) -> CustomerResponse:
     service = CustomerService(db)
 
@@ -91,7 +91,7 @@ def update_customer(
     customer_id: UUID,
     payload: CustomerUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles("ADMIN", "SELLER")),
+    current_user: User = Depends(require_roles("ADMIN", "EMPLOYEE")),
 ) -> CustomerResponse:
     service = CustomerService(db)
 

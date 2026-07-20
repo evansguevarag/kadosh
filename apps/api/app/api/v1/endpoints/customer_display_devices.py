@@ -30,7 +30,7 @@ service = CustomerDisplayDeviceService()
 @router.get("", response_model=list[CustomerDisplayDeviceResponse])
 def list_devices(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles("ADMIN")),
+    current_user: User = Depends(require_roles("ADMIN", "EMPLOYEE")),
 ) -> list[CustomerDisplayDeviceResponse]:
     return service.list_devices(db)
 

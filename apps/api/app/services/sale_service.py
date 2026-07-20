@@ -32,13 +32,24 @@ class SaleService:
         self.inventory_movement_repository = InventoryMovementRepository(db)
         self.audit_log_service = AuditLogService(db)
 
-    def list_sales(self, *, limit: int = 100, offset: int = 0) -> list[Sale]:
+    def list_sales(
+        self,
+        current_user: User,
+        *,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> list[Sale]:
         """Lista todas las ventas."""
 
         self._cancel_expired_payment_sales()
-        return self.sale_repository.find_all(limit=limit, offset=offset)
+        seller_id = current_user.id if current_user.role.name == "EMPLOYEE" else None
+        return self.sale_repository.find_all(
+            limit=limit,
+            offset=offset,
+            seller_id=seller_id,
+        )
 
-    def get_sale_by_id(self, sale_id: UUID) -> Sale:
+    def get_sale_by_id(self, sale_id: UUID, current_user: User) -> Sale:
         """Obtiene una venta por ID."""
 
         sale = self.sale_repository.find_by_id(sale_id)
@@ -47,6 +58,12 @@ class SaleService:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Venta no encontrada.",
+            )
+
+        if current_user.role.name == "EMPLOYEE" and sale.seller_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="No tienes permisos para consultar una venta de otro empleado.",
             )
 
         return sale
@@ -233,6 +250,12 @@ class SaleService:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Venta no encontrada.",
+            )
+
+        if current_user.role.name == "EMPLOYEE" and sale.seller_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="No tienes permisos para cancelar una venta de otro empleado.",
             )
 
         if sale.status == "CANCELLED":

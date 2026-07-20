@@ -15,11 +15,11 @@ router = APIRouter(prefix="/reports", tags=["Reports"])
 @router.get("/dashboard", response_model=ReportsDashboardResponse)
 def get_dashboard_report(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles("ADMIN", "SELLER", "CASHIER")),
+    current_user: User = Depends(require_roles("ADMIN", "EMPLOYEE")),
 ) -> ReportsDashboardResponse:
     service = ReportService(db)
 
-    return service.get_dashboard_report()
+    return service.get_dashboard_report(current_user)
 
 
 @router.get("/detail", response_model=ReportsDetailResponse)

@@ -147,7 +147,8 @@ function PriceBreakdown({ costPrice, salePrice }: { costPrice: string; salePrice
 
 export default function ProductVariantsPage() {
   const router = useRouter();
-  const { token, isAuthenticated } = useAuth();
+  const { token, isAuthenticated, user } = useAuth();
+  const isAdmin = user?.role === "ADMIN" || user?.role_name === "ADMIN";
 
   const [products, setProducts] = useState<Product[]>([]);
   const [variants, setVariants] = useState<ProductVariant[]>([]);
@@ -549,14 +550,14 @@ export default function ProductVariantsPage() {
           <div className="text-sm text-slate-500">
             {variants.length} presentación{variants.length === 1 ? "" : "es"} registrada{variants.length === 1 ? "" : "s"}
           </div>
-          <Button
+          {isAdmin ? <Button
             type="button"
             disabled={products.length === 0}
             onClick={() => setIsCreateDialogOpen(true)}
           >
             <Plus className="h-4 w-4" />
             Nueva presentación
-          </Button>
+          </Button> : null}
         </div>
 
         <Card>
@@ -566,7 +567,7 @@ export default function ProductVariantsPage() {
               Presentaciones registradas
             </CardTitle>
             <div className="flex flex-wrap gap-2">
-              <Button
+              {isAdmin ? <Button
                 type="button"
                 variant="outline"
                 disabled={isGeneratingMissingBarcodes || variants.length === 0}
@@ -578,7 +579,7 @@ export default function ProductVariantsPage() {
                   <Wand2 className="h-4 w-4" />
                 )}
                 Generar faltantes
-              </Button>
+              </Button> : null}
               <Button
                 type="button"
                 variant="outline"
@@ -645,8 +646,8 @@ export default function ProductVariantsPage() {
                           </p>
                         </div>
                       </div>
-                      <div className="mt-3 grid grid-cols-[auto_1fr_1fr] gap-2">
-                        <button
+                      <div className={`mt-3 grid gap-2 ${isAdmin ? "grid-cols-[auto_1fr_1fr]" : "grid-cols-1"}`}>
+                        {isAdmin ? <button
                           aria-label={
                             variant.is_active
                               ? `Desactivar ${variant.sku}`
@@ -666,8 +667,8 @@ export default function ProductVariantsPage() {
                               variant.is_active ? "left-6" : "left-1"
                             }`}
                           />
-                        </button>
-                        <Button
+                        </button> : null}
+                        {isAdmin ? <Button
                           size="sm"
                           type="button"
                           variant="outline"
@@ -675,7 +676,7 @@ export default function ProductVariantsPage() {
                         >
                           <Pencil className="h-3.5 w-3.5" />
                           Editar
-                        </Button>
+                        </Button> : null}
                         <Button
                           size="sm"
                           type="button"
@@ -721,7 +722,7 @@ export default function ProductVariantsPage() {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-3">
-                            <button
+                            {isAdmin ? <button
                               aria-checked={variant.is_active}
                               className={`relative h-6 w-11 rounded-full transition ${
                                 variant.is_active
@@ -738,7 +739,7 @@ export default function ProductVariantsPage() {
                                   variant.is_active ? "left-6" : "left-1"
                                 }`}
                               />
-                            </button>
+                            </button> : null}
                             <Badge variant={statusBadgeVariant(variant.status)}>
                               {variant.is_active ? "Activa" : "Inactiva"}
                             </Badge>
@@ -746,7 +747,7 @@ export default function ProductVariantsPage() {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
-                            <Button
+                            {isAdmin ? <Button
                               size="sm"
                               type="button"
                               variant="outline"
@@ -754,7 +755,7 @@ export default function ProductVariantsPage() {
                             >
                               <Pencil className="h-3.5 w-3.5" />
                               Editar
-                            </Button>
+                            </Button> : null}
                           <Button
                             size="sm"
                             type="button"

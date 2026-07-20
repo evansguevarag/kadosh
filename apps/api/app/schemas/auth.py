@@ -20,7 +20,8 @@ class AuthUserResponse(BaseModel):
 
     id: UUID
     first_name: str
-    last_name: str
+    paternal_last_name: str
+    maternal_last_name: str
     email: EmailStr
     role: str
     status: str
@@ -88,10 +89,15 @@ class BootstrapAdminRequest(BaseModel):
         max_length=100,
         examples=["Jaime"],
     )
-    last_name: str = Field(
+    paternal_last_name: str = Field(
         min_length=1,
         max_length=100,
         examples=["Guevara"],
+    )
+    maternal_last_name: str = Field(
+        min_length=1,
+        max_length=100,
+        examples=["Gil"],
     )
     email: EmailStr = Field(
         examples=["admin@kadosh.com"],
@@ -101,14 +107,16 @@ class BootstrapAdminRequest(BaseModel):
         max_length=72,
         examples=["Kadosh123"],
     )
-    document_number: str | None = Field(
-        default=None,
-        max_length=20,
+    document_number: str = Field(
+        min_length=8,
+        max_length=8,
+        pattern=r"^\d{8}$",
         examples=["70900994"],
     )
-    phone: str | None = Field(
-        default=None,
-        max_length=30,
+    phone: str = Field(
+        min_length=9,
+        max_length=9,
+        pattern=r"^9\d{8}$",
         examples=["924454127"],
     )
 

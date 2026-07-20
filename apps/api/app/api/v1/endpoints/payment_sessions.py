@@ -19,7 +19,7 @@ router = APIRouter(prefix="/payment-sessions", tags=["Payment Sessions"])
 @router.get("", response_model=list[PaymentSessionResponse])
 def list_payment_sessions(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles("ADMIN", "SELLER", "CASHIER")),
+    current_user: User = Depends(require_roles("ADMIN", "EMPLOYEE")),
 ) -> list[PaymentSessionResponse]:
     service = PaymentSessionService(db)
 
@@ -33,7 +33,7 @@ def list_payment_sessions(
 def list_payment_sessions_by_sale(
     sale_id: UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles("ADMIN", "SELLER", "CASHIER")),
+    current_user: User = Depends(require_roles("ADMIN", "EMPLOYEE")),
 ) -> list[PaymentSessionResponse]:
     service = PaymentSessionService(db)
 
@@ -47,7 +47,7 @@ def list_payment_sessions_by_sale(
 def list_active_sessions_by_device(
     device_id: UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles("ADMIN", "SELLER", "CASHIER")),
+    current_user: User = Depends(require_roles("ADMIN", "EMPLOYEE")),
 ) -> list[PaymentSessionResponse]:
     service = PaymentSessionService(db)
 
@@ -58,7 +58,7 @@ def list_active_sessions_by_device(
 def get_payment_session(
     payment_session_id: UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles("ADMIN", "SELLER", "CASHIER")),
+    current_user: User = Depends(require_roles("ADMIN", "EMPLOYEE")),
 ) -> PaymentSessionResponse:
     service = PaymentSessionService(db)
 
@@ -73,7 +73,7 @@ def get_payment_session(
 def create_payment_session(
     payload: PaymentSessionCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles("ADMIN", "SELLER", "CASHIER")),
+    current_user: User = Depends(require_roles("ADMIN", "EMPLOYEE")),
 ) -> PaymentSessionResponse:
     service = PaymentSessionService(db)
 
@@ -88,7 +88,7 @@ def update_payment_session_status(
     payment_session_id: UUID,
     payload: PaymentSessionStatusUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles("ADMIN", "SELLER", "CASHIER")),
+    current_user: User = Depends(require_roles("ADMIN", "EMPLOYEE")),
 ) -> PaymentSessionResponse:
     service = PaymentSessionService(db)
 

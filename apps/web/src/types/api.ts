@@ -1,14 +1,31 @@
-export type UserRole = "ADMIN" | "SELLER" | "CASHIER";
+export type UserRole = "ADMIN" | "EMPLOYEE";
 
 export type AuthUser = {
   id: string;
   first_name: string;
-  last_name: string;
+  paternal_last_name: string;
+  maternal_last_name: string;
   full_name?: string;
   email: string;
   role: UserRole | string;
   role_name?: string;
   status: string;
+};
+
+export type ManagedUser = {
+  id: string;
+  first_name: string;
+  paternal_last_name: string;
+  maternal_last_name: string;
+  email: string;
+  document_number: string;
+  phone: string;
+  role: UserRole;
+  status: string;
+  is_active: boolean;
+  last_login_at: string | null;
+  created_at: string;
+  updated_at: string;
 };
 
 export type LoginRequest = {
@@ -138,6 +155,12 @@ export type Sale = {
   updated_at: string;
   items: SaleItem[];
   customer: Customer | null;
+  seller: {
+    id: string;
+    first_name: string;
+    paternal_last_name: string;
+    maternal_last_name: string;
+  };
 };
 
 export type ReturnTransaction = {

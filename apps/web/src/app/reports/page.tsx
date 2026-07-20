@@ -86,6 +86,10 @@ function getCustomerDocument(sale: Sale) {
     : "";
 }
 
+function getSellerName(sale: Sale) {
+  return `${sale.seller.first_name} ${sale.seller.paternal_last_name} ${sale.seller.maternal_last_name}`.trim();
+}
+
 export default function ReportsPage() {
   const router = useRouter();
   const { token, isAuthenticated } = useAuth();
@@ -97,10 +101,22 @@ export default function ReportsPage() {
   const [endDate, setEndDate] = useState(() => toDateInputValue(new Date()));
   const [activeTab, setActiveTab] =
     useState<(typeof reportTabs)[number]>("RESUMEN");
+  const [sellerFilter, setSellerFilter] = useState("ALL");
   const [isLoading, setIsLoading] = useState(true);
 
-  const filteredSales = sales;
-  const filteredPayments = payments;
+  const sellers = useMemo(() => {
+    const unique = new Map<string, string>();
+    sales.forEach((sale) => unique.set(sale.seller.id, getSellerName(sale)));
+    return [...unique.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  }, [sales]);
+  const filteredSales = useMemo(
+    () => sales.filter((sale) => sellerFilter === "ALL" || sale.seller.id === sellerFilter),
+    [sales, sellerFilter],
+  );
+  const filteredPayments = useMemo(() => {
+    const saleIds = new Set(filteredSales.map((sale) => sale.id));
+    return payments.filter((payment) => saleIds.has(payment.sale_id));
+  }, [filteredSales, payments]);
 
   const paidSales = useMemo(
     () => filteredSales.filter((sale) => sale.status === "PAID"),
@@ -432,7 +448,7 @@ export default function ReportsPage() {
       ) : (
         <div className="space-y-6">
           <Card className="print:hidden">
-            <CardContent className="grid gap-4 p-4 lg:grid-cols-[1fr_1fr_auto]">
+            <CardContent className="grid gap-4 p-4 lg:grid-cols-[1fr_1fr_1fr_auto]">
               <div className="space-y-2">
                 <Label htmlFor="startDate">Desde</Label>
                 <Input
@@ -441,6 +457,19 @@ export default function ReportsPage() {
                   value={startDate}
                   onChange={(event) => setStartDate(event.target.value)}
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="sellerFilter">Responsable</Label>
+                <select
+                  id="sellerFilter"
+                  className="h-10 w-full rounded-md border bg-white px-3 text-sm"
+                  value={sellerFilter}
+                  onChange={(event) => setSellerFilter(event.target.value)}
+                >
+                  <option value="ALL">Todos los responsables</option>
+                  {sellers.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+                </select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="endDate">Hasta</Label>
@@ -604,6 +633,9 @@ export default function ReportsPage() {
                             <p className="mt-1 text-xs text-slate-500">
                               {itemCount} producto{itemCount === 1 ? "" : "s"}
                             </p>
+                            <p className="mt-1 truncate text-xs text-slate-500">
+                              Atendido por {getSellerName(sale)}
+                            </p>
                           </div>
                           <span className="shrink-0 text-xs font-medium text-slate-600">
                             {formatSaleStatus(sale.status)}
@@ -621,6 +653,7 @@ export default function ReportsPage() {
                         <TableHead>Fecha</TableHead>
                         <TableHead>Venta</TableHead>
                         <TableHead>Cliente</TableHead>
+                        <TableHead>Responsable</TableHead>
                         <TableHead>Productos</TableHead>
                         <TableHead>Total</TableHead>
                         <TableHead>Estado</TableHead>
@@ -640,6 +673,7 @@ export default function ReportsPage() {
                               ? `${sale.customer.first_name} ${sale.customer.last_name || ""}`.trim()
                               : "Cliente general"}
                           </TableCell>
+                          <TableCell>{getSellerName(sale)}</TableCell>
                           <TableCell>
                             {sale.items.reduce(
                               (total, item) => total + item.quantity,
