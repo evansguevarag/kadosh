@@ -1148,6 +1148,10 @@ function BarcodeSvg({ value }: { value: string }) {
 
 function VariantLabelsPrintView({ variants }: { variants: ProductVariant[] }) {
   const sortedVariants = sortVariantsForLabels(variants);
+  const pages = Array.from(
+    { length: Math.ceil(sortedVariants.length / 6) },
+    (_, pageIndex) => sortedVariants.slice(pageIndex * 6, pageIndex * 6 + 6),
+  );
 
   return (
     <section className="hidden min-h-screen bg-white text-slate-950 print:block">
@@ -1166,8 +1170,12 @@ function VariantLabelsPrintView({ variants }: { variants: ProductVariant[] }) {
         }
       `}</style>
 
-      <div className="mx-auto grid w-[202mm] grid-cols-[99mm_99mm] gap-x-[4mm] gap-y-[4mm]">
-        {sortedVariants.map((variant) => {
+      {pages.map((pageVariants, pageIndex) => (
+        <div
+          key={`label-page-${pageIndex + 1}`}
+          className="mx-auto grid h-[289mm] w-[202mm] grid-cols-[99mm_99mm] grid-rows-[89mm_89mm_89mm] content-start gap-x-[4mm] gap-y-[4mm] break-after-page last:break-after-auto"
+        >
+        {pageVariants.map((variant) => {
           const printableCode = getPrintableCode(variant);
 
           return (
@@ -1211,7 +1219,8 @@ function VariantLabelsPrintView({ variants }: { variants: ProductVariant[] }) {
             </div>
           );
         })}
-      </div>
+        </div>
+      ))}
     </section>
   );
 }

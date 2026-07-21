@@ -16,6 +16,8 @@ import {
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { ReceiptBusinessHeader } from "@/components/receipts/receipt-business-header";
+import { ReceiptQr } from "@/components/receipts/receipt-qr";
 import {
   Card,
   CardContent,
@@ -203,6 +205,7 @@ export default function CustomerDisplayPage() {
   const [culqiLoadFailed, setCulqiLoadFailed] = useState(false);
   const [isPaying, setIsPaying] = useState(false);
   const [isRefreshingManually, setIsRefreshingManually] = useState(false);
+  const [isReceiptQrReady, setIsReceiptQrReady] = useState(false);
   const [paymentMessage, setPaymentMessage] = useState("");
   const [completedPayment, setCompletedPayment] =
     useState<CompletedPayment | null>(null);
@@ -230,6 +233,7 @@ export default function CustomerDisplayPage() {
       }
     }
 
+    setIsReceiptQrReady(false);
     setCompletedPayment({
       saleId,
       paymentSessionId: paidSession.id,
@@ -733,9 +737,19 @@ export default function CustomerDisplayPage() {
                   </div>
 
                   <div className="grid gap-3 sm:grid-cols-2">
-                    <Button className="h-12" onClick={handlePrintReceipt}>
-                      <Printer className="h-5 w-5" />
-                      Imprimir boleta
+                    <Button
+                      className="h-12"
+                      disabled={!isReceiptQrReady}
+                      onClick={handlePrintReceipt}
+                    >
+                      {isReceiptQrReady ? (
+                        <Printer className="h-5 w-5" />
+                      ) : (
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                      )}
+                      {isReceiptQrReady
+                        ? "Imprimir boleta"
+                        : "Preparando boleta..."}
                     </Button>
 
                     <Button
@@ -914,6 +928,7 @@ export default function CustomerDisplayPage() {
         <ReceiptPrintView
           completedPayment={completedPayment}
           deviceName={deviceStatus?.device_name || "Tablet"}
+          onQrReady={() => setIsReceiptQrReady(true)}
         />
       ) : null}
     </>
@@ -923,25 +938,30 @@ export default function CustomerDisplayPage() {
 function ReceiptPrintView({
   completedPayment,
   deviceName,
+  onQrReady,
 }: {
   completedPayment: CompletedPayment;
   deviceName: string;
+  onQrReady: () => void;
 }) {
   const receipt = completedPayment.receipt;
   const items = receipt?.items ?? [];
   const saleNumber = receipt?.sale_number ?? completedPayment.saleId.slice(0, 8);
   const paidAt = receipt?.paid_at ?? completedPayment.paidAt;
+  const sellerName = receipt?.seller
+    ? [
+        receipt.seller.first_name,
+        receipt.seller.paternal_last_name,
+        receipt.seller.maternal_last_name,
+      ]
+        .filter(Boolean)
+        .join(" ")
+    : "-";
 
   return (
     <section className="hidden bg-white p-6 text-slate-950 print:block">
       <div className="mx-auto max-w-[760px]">
-        <div className="border-b border-slate-300 pb-4 text-center">
-          <p className="text-xl font-bold">Kadosh</p>
-          <p className="mt-1 text-sm font-semibold">Boleta de venta</p>
-          <p className="mt-1 text-xs text-slate-600">
-            Comprobante interno de compra
-          </p>
-        </div>
+        <ReceiptBusinessHeader />
 
         <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
           <div>
@@ -972,15 +992,13 @@ function ReceiptPrintView({
               {receipt.customer.document_type || "Documento"}:{" "}
               {receipt.customer.document_number || "-"}
             </p>
-            {receipt.customer.phone || receipt.customer.email ? (
-              <p className="mt-1 text-slate-600">
-                {[receipt.customer.phone, receipt.customer.email]
-                  .filter(Boolean)
-                  .join(" | ")}
-              </p>
-            ) : null}
           </div>
         ) : null}
+
+        <p className="mt-2 text-sm">
+          <span className="text-slate-500">Vendedor:</span>{" "}
+          <span className="font-semibold">{sellerName}</span>
+        </p>
 
         <table className="mt-6 w-full border-collapse text-sm">
           <thead>
@@ -1027,15 +1045,26 @@ function ReceiptPrintView({
 
         <div className="ml-auto mt-5 w-full max-w-[320px] space-y-2 text-sm">
           <div className="flex justify-between">
-            <span>Subtotal</span>
+            <span>Importe antes de descuento</span>
             <span>{formatMoney(receipt?.subtotal ?? completedPayment.amount)}</span>
           </div>
           <div className="flex justify-between">
             <span>Descuento</span>
             <span>{formatMoney(receipt?.discount_total ?? "0")}</span>
           </div>
+          <div className="flex justify-between border-t border-slate-200 pt-2">
+            <span>Operación gravada</span>
+            <span>
+              {formatMoney(
+                String(
+                  Number(receipt?.total ?? completedPayment.amount) -
+                    Number(receipt?.tax_total ?? "0"),
+                ),
+              )}
+            </span>
+          </div>
           <div className="flex justify-between">
-            <span>IGV / impuesto</span>
+            <span>IGV incluido (18%)</span>
             <span>{formatMoney(receipt?.tax_total ?? "0")}</span>
           </div>
           <div className="flex justify-between border-t border-slate-300 pt-2 text-lg font-bold">
@@ -1048,6 +1077,11 @@ function ReceiptPrintView({
           <p>{completedPayment.message}</p>
           <p className="mt-1">Gracias por su compra.</p>
         </div>
+
+        <ReceiptQr
+          receiptToken={receipt?.receipt_token ?? ""}
+          onReady={receipt?.receipt_token ? onQrReady : undefined}
+        />
       </div>
     </section>
   );

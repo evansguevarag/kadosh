@@ -190,7 +190,7 @@ export default function CustomersPage() {
                           {customer.first_name} {customer.last_name}
                         </p>
                         <p className="mt-1 text-xs text-slate-500">
-                          {customer.document_type} {customer.document_number}
+                          {customer.document_number}
                         </p>
                       </div>
                       <Badge variant={customer.is_active ? "default" : "outline"}>
@@ -219,7 +219,7 @@ export default function CustomersPage() {
               <Table>
                 <TableHeader className="sticky top-0 z-10 bg-white">
                   <TableRow>
-                    <TableHead>Documento</TableHead>
+                    <TableHead>DNI</TableHead>
                     <TableHead>Cliente</TableHead>
                     <TableHead>Teléfono</TableHead>
                     <TableHead>Correo</TableHead>
@@ -231,14 +231,9 @@ export default function CustomersPage() {
                   {filteredCustomers.map((customer) => (
                     <TableRow key={customer.id}>
                       <TableCell>
-                        <div>
-                          <p className="font-medium">
-                            {customer.document_number}
-                          </p>
-                          <p className="text-xs text-slate-500">
-                            {customer.document_type}
-                          </p>
-                        </div>
+                        <p className="font-medium">
+                          {customer.document_number}
+                        </p>
                       </TableCell>
                       <TableCell className="font-medium">
                         {customer.first_name} {customer.last_name}

@@ -216,7 +216,7 @@ export function AppShell({ title, description, children }: AppShellProps) {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-950">
-      <aside className="fixed left-0 top-0 hidden h-screen w-60 flex-col border-r bg-white px-4 py-5 lg:flex">
+      <aside className="fixed left-0 top-0 hidden h-screen w-60 flex-col border-r bg-white px-4 py-5 print:hidden lg:flex">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-950 text-white">
             <ShoppingBag className="h-5 w-5" />
@@ -323,8 +323,8 @@ export function AppShell({ title, description, children }: AppShellProps) {
         </DialogContent>
       </Dialog>
 
-      <div className="lg:pl-60">
-        <header className="sticky top-0 z-20 border-b bg-white/95 px-3 py-3 backdrop-blur sm:px-5 sm:py-4 lg:px-8">
+      <div className="print:pl-0 lg:pl-60">
+        <header className="sticky top-0 z-20 border-b bg-white/95 px-3 py-3 backdrop-blur print:hidden sm:px-5 sm:py-4 lg:px-8">
           <div className="flex min-w-0 items-center gap-3">
             <Button
               aria-label="Abrir menú principal"
@@ -373,7 +373,7 @@ export function AppShell({ title, description, children }: AppShellProps) {
           </div>
         </header>
 
-        <main className="min-w-0 px-3 py-4 sm:px-5 sm:py-6 lg:px-8">
+        <main className="min-w-0 px-3 py-4 print:p-0 sm:px-5 sm:py-6 lg:px-8">
           {children}
         </main>
       </div>
