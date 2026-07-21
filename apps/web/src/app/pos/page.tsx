@@ -1862,7 +1862,7 @@ export default function PosPage() {
                 </div>
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="destructive"
                   disabled={isCancellingTabletSale}
                   onClick={() => void handleCancelPendingTabletSale()}
                 >
@@ -2216,6 +2216,7 @@ export default function PosPage() {
             </Button>
             <Button
               type="button"
+              variant="destructive"
               disabled={isCancellingTabletSale}
               onClick={() => void handleClearCurrentSale()}
             >

@@ -58,6 +58,12 @@
   transform: translateY(-50%) !important;
 }
 
+@media print {
+  [data-sonner-toaster] {
+    display: none !important;
+  }
+}
+
 :root {
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);

@@ -316,7 +316,11 @@ export function AppShell({ title, description, children }: AppShellProps) {
               Cancelar
             </Button>
 
-            <Button type="button" onClick={confirmLogout}>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={confirmLogout}
+            >
               Sí, cerrar sesión
             </Button>
           </DialogFooter>
